@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Custom Color Palette - #FAF4EC (cream) and #D2AC6A (gold) */
+    --cream: 250 244 236; /* #FAF4EC */
+    --gold: 210 172 106; /* #D2AC6A */
+    --gold-dark: 180 140 80;
+    --gold-light: 230 200 140;
+    
+    --background: var(--cream);
+    --foreground: 20 15 10;
+    --card: 255 255 255;
+    --card-foreground: 20 15 10;
+    --popover: 255 255 255;
+    --popover-foreground: 20 15 10;
+    --primary: var(--gold);
+    --primary-foreground: 20 15 10;
+    --secondary: var(--cream);
+    --secondary-foreground: 20 15 10;
+    --muted: 240 235 230;
+    --muted-foreground: 80 70 60;
+    --accent: var(--gold);
+    --accent-foreground: 20 15 10;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 220 210 200;
+    --input: 220 210 200;
+    --ring: var(--gold);
+    --radius: 0.75rem;
+    
+    /* Glow effects */
+    --glow-gold: 210 172 106;
+    --glow-opacity: 0.4;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-gradient-to-br from-[#FAF4EC] via-[#FAF4EC] to-[#F5EDE0] text-foreground font-sans antialiased;
+    background-attachment: fixed;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gold/30 rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gold/50;
+  }
+}
+
+@layer utilities {
+  /* Glow effects */
+  .glow-gold {
+    box-shadow: 0 0 20px rgba(210, 172, 106, 0.4),
+                0 0 40px rgba(210, 172, 106, 0.2);
+  }
+  
+  .glow-gold-sm {
+    box-shadow: 0 0 10px rgba(210, 172, 106, 0.5);
+  }
+  
+  .glow-gold-lg {
+    box-shadow: 0 0 30px rgba(210, 172, 106, 0.4),
+                0 0 60px rgba(210, 172, 106, 0.2),
+                0 0 90px rgba(210, 172, 106, 0.1);
+  }
+  
+  /* Frosted glass effect */
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(210, 172, 106, 0.2);
+  }
+  
+  .glass-dark {
+    background: rgba(250, 244, 236, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(210, 172, 106, 0.3);
+  }
+  
+  /* Gradient text */
+  .text-gradient-gold {
+    @apply bg-gradient-to-r from-[#D2AC6A] to-[#E8C896] bg-clip-text text-transparent;
+  }
+  
+  /* Shine animation */
+  @keyframes shine {
+    0% {
+      background-position: -200% center;
+    }
+    100% {
+      background-position: 200% center;
+    }
+  }
+  
+  .animate-shine {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(210, 172, 106, 0.3),
+      transparent
+    );
+    background-size: 200% auto;
+    animation: shine 3s linear infinite;
+  }
+  
+  /* Pulse glow */
+  @keyframes pulse-glow {
+    0%, 100% {
+      opacity: 1;
+      box-shadow: 0 0 20px rgba(210, 172, 106, 0.4);
+    }
+    50% {
+      opacity: 0.8;
+      box-shadow: 0 0 30px rgba(210, 172, 106, 0.6);
+    }
+  }
+  
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+}
+
