@@ -139,11 +139,8 @@ export class StockService {
       where.productId = filters.productId
     }
 
-    if (filters?.lowStock) {
-      where.currentLevel = {
-        lte: prisma.raw("threshold"),
-      }
-    }
+    // Note: lowStock filtering is done in application layer
+    // Prisma doesn't support comparing fields directly in where clause
 
     if (filters?.search) {
       where.product = {
@@ -154,7 +151,7 @@ export class StockService {
       }
     }
 
-    return prisma.storeStock.findMany({
+    const results = await prisma.storeStock.findMany({
       where,
       include: {
         product: {
@@ -181,6 +178,13 @@ export class StockService {
         { product: { name: "asc" } },
       ],
     })
+
+    // Filter low stock items if requested
+    if (filters?.lowStock) {
+      return results.filter((stock) => stock.currentLevel <= stock.threshold)
+    }
+
+    return results
   }
 
   /**

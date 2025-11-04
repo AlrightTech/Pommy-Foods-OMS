@@ -21,6 +21,14 @@ const nextConfig = {
       exclude: ["error", "warn"],
     } : false,
   },
+  typescript: {
+    // Allow build to continue with type errors in NextAuth (beta version has type issues)
+    ignoreBuildErrors: false,
+  },
+  eslint: {
+    // Allow build to continue with ESLint warnings
+    ignoreDuringBuilds: false,
+  },
 }
 
 module.exports = nextConfig

@@ -52,9 +52,9 @@ export default function OrderDetailsPage() {
   const [isModifying, setIsModifying] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleItemsChange = (items: typeof order.items) => {
+  const handleItemsChange = (items: Array<{ id?: string; productId: string; productName: string; productSku: string; quantity: number; unitPrice: number; totalPrice: number }>) => {
     const totalAmount = items.reduce((sum, item) => sum + item.totalPrice, 0)
-    setOrder({ ...order, items, totalAmount })
+    setOrder({ ...order, items: items.map(item => ({ ...item, id: item.id || `temp-${Date.now()}-${Math.random()}` })), totalAmount })
   }
 
   const handleApprove = async (orderId: string) => {

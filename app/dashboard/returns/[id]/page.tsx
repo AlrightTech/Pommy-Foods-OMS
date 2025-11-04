@@ -25,7 +25,7 @@ const mockReturn = {
   orderNumber: "ORD-001",
   storeName: "Convenience Store A",
   returnDate: new Date("2024-01-15"),
-  status: "PENDING" as const,
+  status: "PENDING" as "PENDING" | "PROCESSED" | "REJECTED",
   items: [
     {
       productName: "Pommy Meal - Chicken",
@@ -46,17 +46,17 @@ const mockReturn = {
 export default function ReturnDetailsPage() {
   const params = useParams()
   const router = useRouter()
-  const [returnItem, setReturnItem] = useState(mockReturn)
+  const [returnItem, setReturnItem] = useState<typeof mockReturn & { status: "PENDING" | "PROCESSED" | "REJECTED" }>(mockReturn as typeof mockReturn & { status: "PENDING" | "PROCESSED" | "REJECTED" })
 
   const handleProcess = () => {
-    setReturnItem({ ...returnItem, status: "PROCESSED" })
+    setReturnItem({ ...returnItem, status: "PROCESSED" as "PROCESSED" })
     // TODO: API call to process return
     alert("Return processed successfully! Invoice will be adjusted.")
   }
 
   const handleReject = () => {
     if (!confirm("Are you sure you want to reject this return?")) return
-    setReturnItem({ ...returnItem, status: "REJECTED" })
+    setReturnItem({ ...returnItem, status: "REJECTED" as "REJECTED" })
     // TODO: API call to reject return
     alert("Return rejected.")
   }

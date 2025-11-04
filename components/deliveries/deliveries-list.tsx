@@ -34,12 +34,12 @@ interface DeliveriesListProps {
   onAssignDriver?: (deliveryId: string, driverId: string) => void
 }
 
-const statusConfig: Record<DeliveryStatus, { label: string; variant: "default" | "secondary" | "success" }> = {
+const statusConfig: Record<DeliveryStatus, { label: string; variant: "default" | "secondary" | "success" | "destructive" }> = {
   PENDING: { label: "Pending", variant: "secondary" },
   ASSIGNED: { label: "Assigned", variant: "default" },
   IN_TRANSIT: { label: "In Transit", variant: "default" },
   DELIVERED: { label: "Delivered", variant: "success" },
-  FAILED: { label: "Failed", variant: "destructive" },
+  FAILED: { label: "Failed", variant: "secondary" },
 }
 
 export function DeliveriesList({

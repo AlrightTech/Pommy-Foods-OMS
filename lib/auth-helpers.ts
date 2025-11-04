@@ -1,5 +1,5 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "./auth"
+import { getToken } from "next-auth/jwt"
+import type { NextRequest } from "next/server"
 import type { UserRole } from "@prisma/client"
 
 export interface AuthUser {
@@ -11,18 +11,37 @@ export interface AuthUser {
 }
 
 /**
- * Get the current session user
+ * Get the current authenticated user from request
+ * Use this in API routes
  */
-export async function getCurrentUser(): Promise<AuthUser | null> {
-  const session = await getServerSession(authOptions)
-  return session?.user as AuthUser | null
+export async function getCurrentUser(request: NextRequest): Promise<AuthUser | null> {
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  })
+
+  if (!token) {
+    return null
+  }
+
+  return {
+    id: token.id as string,
+    email: token.email as string,
+    name: token.name as string,
+    role: token.role as UserRole,
+    storeId: token.storeId as string | undefined,
+  }
 }
 
 /**
  * Require authentication - throws if user is not authenticated
  */
-export async function requireAuth(): Promise<AuthUser> {
-  const user = await getCurrentUser()
+export async function requireAuth(request?: NextRequest): Promise<AuthUser> {
+  if (!request) {
+    throw new Error("Request object required for authentication")
+  }
+
+  const user = await getCurrentUser(request)
   if (!user) {
     throw new Error("Unauthorized")
   }
@@ -39,8 +58,8 @@ export function hasRole(user: AuthUser, roles: UserRole[]): boolean {
 /**
  * Require role - throws if user doesn't have required role
  */
-export async function requireRole(roles: UserRole[]): Promise<AuthUser> {
-  const user = await requireAuth()
+export async function requireRole(roles: UserRole[], request?: NextRequest): Promise<AuthUser> {
+  const user = await requireAuth(request)
   if (!hasRole(user, roles)) {
     throw new Error("Forbidden")
   }
@@ -59,4 +78,3 @@ export function canAccessStore(user: AuthUser, storeId: string): boolean {
   // Store owners/managers can only access their own store
   return user.storeId === storeId
 }
-

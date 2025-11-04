@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
-import type { Prisma, InvoiceStatus } from "@prisma/client"
+import { Prisma } from "@prisma/client"
+import type { InvoiceStatus } from "@prisma/client"
 
 export interface CreateInvoiceInput {
   orderId: string
@@ -282,7 +283,7 @@ export class InvoiceService {
       const discount = data.discount ?? Number(invoice.discount)
       const tax = data.tax ?? Number(invoice.tax)
       const returnAdjustment = data.returnAdjustment ?? Number(invoice.returnAdjustment)
-      totalAmount = subtotal - discount + tax - returnAdjustment
+      totalAmount = new Prisma.Decimal(subtotal - discount + tax - returnAdjustment)
     }
 
     return prisma.invoice.update({

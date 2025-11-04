@@ -1,24 +1,19 @@
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { NextRequest, NextResponse } from "next/server"
+import { requireAuth } from "@/lib/auth-helpers"
 import { UserService } from "@/lib/services/user.service"
 
 // GET /api/users/me - Get current user
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const user = await requireAuth(request)
 
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const userData = await UserService.getUserById(user.id)
 
-    const user = await UserService.getUserById(session.user.id)
-
-    if (!user) {
+    if (!userData) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    return NextResponse.json(user)
+    return NextResponse.json(userData)
   } catch (error) {
     console.error("Error getting current user:", error)
     return NextResponse.json(

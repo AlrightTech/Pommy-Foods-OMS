@@ -12,7 +12,7 @@ interface Delivery {
   orderNumber: string
   storeName: string
   scheduledDate: Date
-  status: "PENDING" | "ASSIGNED" | "IN_TRANSIT" | "DELIVERED"
+  status: "PENDING" | "ASSIGNED" | "IN_TRANSIT" | "DELIVERED" | "FAILED"
 }
 
 interface DeliveriesCalendarProps {

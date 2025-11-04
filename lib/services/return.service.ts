@@ -137,13 +137,8 @@ export class ReturnService {
             },
           },
         },
-        returnedByUser: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
+        // Note: returnedBy is a userId string, not a relation in schema
+        // If you need user details, fetch separately
       },
     })
   }

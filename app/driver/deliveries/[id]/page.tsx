@@ -114,7 +114,7 @@ export default function DeliveryExecutionPage() {
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full">
             <TabsTrigger value="delivery" className="flex-1">Delivery</TabsTrigger>
             <TabsTrigger value="returns" className="flex-1">Returns</TabsTrigger>

@@ -13,7 +13,7 @@ import { ArrowLeft, CheckCircle2 } from "lucide-react"
 const mockKitchenSheet = {
   id: "1",
   orderNumber: "ORD-001",
-  status: "IN_PROGRESS" as const,
+  status: "IN_PROGRESS" as "PENDING" | "IN_PROGRESS" | "COMPLETED",
   createdAt: new Date("2024-01-15"),
   items: [
     {

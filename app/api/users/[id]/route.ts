@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { requireAuth, requireRole } from "@/lib/auth-helpers"
 import { UserService } from "@/lib/services/user.service"
 import { z } from "zod"
 
@@ -19,14 +18,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const authUser = await requireAuth(request)
 
     // Users can view themselves, or admins can view anyone
-    if (session.user.id !== params.id && session.user.role !== "SUPER_ADMIN" && session.user.role !== "ADMIN") {
+    if (authUser.id !== params.id && authUser.role !== "SUPER_ADMIN" && authUser.role !== "ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -52,15 +47,11 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const authUser = await requireAuth(request)
 
     // Users can update themselves (limited fields), or admins can update anyone
-    const isOwnAccount = session.user.id === params.id
-    const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "ADMIN"
+    const isOwnAccount = authUser.id === params.id
+    const isAdmin = authUser.role === "SUPER_ADMIN" || authUser.role === "ADMIN"
 
     if (!isOwnAccount && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -101,19 +92,12 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    await requireRole(["SUPER_ADMIN", "ADMIN"], request)
 
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Only admins can delete users
-    if (session.user.role !== "SUPER_ADMIN" && session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
+    const authUser = await requireAuth(request)
 
     // Prevent self-deletion
-    if (session.user.id === params.id) {
+    if (authUser.id === params.id) {
       return NextResponse.json(
         { error: "Cannot delete your own account" },
         { status: 400 }

@@ -42,23 +42,27 @@ async function main() {
 
   console.log("Created system user:", systemUser.email)
 
-  // Create sample store
-  const store = await prisma.store.upsert({
+  // Create sample store (use findFirst + create/update since name is not unique)
+  let store = await prisma.store.findFirst({
     where: { name: "Sample Store" },
-    update: {},
-    create: {
-      name: "Sample Store",
-      contactName: "John Doe",
-      email: "store@example.com",
-      phone: "+1 234-567-8900",
-      address: "123 Main Street",
-      city: "New York",
-      region: "NYC",
-      creditLimit: 10000,
-      paymentTerms: 30,
-      isActive: true,
-    },
   })
+
+  if (!store) {
+    store = await prisma.store.create({
+      data: {
+        name: "Sample Store",
+        contactName: "John Doe",
+        email: "store@example.com",
+        phone: "+1 234-567-8900",
+        address: "123 Main Street",
+        city: "New York",
+        region: "NYC",
+        creditLimit: 10000,
+        paymentTerms: 30,
+        isActive: true,
+      },
+    })
+  }
 
   console.log("Created sample store:", store.name)
 

@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Eye, Plus } from "lucide-react"
-import Link from "next/link"
 import type { OrderStatus } from "@/types"
 
 // Mock data
@@ -122,7 +121,7 @@ export default function OrdersPage() {
             <CardDescription>View and manage orders from all stores</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-6">
                 <TabsTrigger value="all">All Orders</TabsTrigger>
                 <TabsTrigger value="pending">Pending Review</TabsTrigger>

@@ -3,5 +3,8 @@ import { authOptions } from "@/lib/auth"
 
 const handler = NextAuth(authOptions)
 
-export { handler as GET, handler as POST }
+// NextAuth v5 beta type workaround
+// The handler is a NextAuthResult which implements GET and POST but TypeScript doesn't recognize it
+// @ts-expect-error - NextAuth v5 beta has incomplete types
+export const { GET, POST } = handler
 

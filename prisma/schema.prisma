@@ -328,7 +328,7 @@ enum InvoiceStatus {
 model Payment {
   id              String      @id @default(cuid())
   invoiceId       String
-  deliveryId      String?
+  deliveryId      String?     @unique
   amount          Decimal
   paymentMethod   PaymentMethod
   paymentDate     DateTime    @default(now())

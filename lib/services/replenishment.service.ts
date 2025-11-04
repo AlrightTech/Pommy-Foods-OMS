@@ -24,22 +24,29 @@ export class ReplenishmentService {
     const stores = await prisma.store.findMany({ where })
 
     for (const store of stores) {
-      // Get low stock items for this store
-      const stockLevels = await prisma.storeStock.findMany({
+      // Get all stock items for this store and filter low stock in application
+      const allStockLevels = await prisma.storeStock.findMany({
         where: {
           storeId: store.id,
-          currentLevel: {
-            lte: prisma.raw("threshold"),
-          },
         },
         include: {
           product: {
-            where: {
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+              price: true,
+              shelfLife: true,
               isActive: true,
             },
           },
         },
       })
+
+      // Filter low stock items (currentLevel <= threshold) and ensure shelfLife is included
+      const stockLevels = allStockLevels.filter(
+        (stock) => stock.currentLevel <= stock.threshold && stock.product.isActive
+      )
 
       if (stockLevels.length === 0) {
         continue
@@ -67,7 +74,11 @@ export class ReplenishmentService {
         // Update existing draft with new items
         const items = stockLevels.map((stock) => ({
           productId: stock.productId,
-          quantity: this.calculateReorderQuantity(stock),
+          quantity: this.calculateReorderQuantity({
+            currentLevel: stock.currentLevel,
+            threshold: stock.threshold,
+            product: stock.product,
+          }),
         }))
 
         try {
@@ -79,10 +90,14 @@ export class ReplenishmentService {
       } else {
         // Create new draft order
         const items = stockLevels
-          .filter((stock) => stock.product) // Only active products
+          .filter((stock) => stock.product.isActive) // Only active products
           .map((stock) => ({
             productId: stock.productId,
-            quantity: this.calculateReorderQuantity(stock),
+            quantity: this.calculateReorderQuantity({
+              currentLevel: stock.currentLevel,
+              threshold: stock.threshold,
+              product: stock.product,
+            }),
           }))
 
         if (items.length > 0) {

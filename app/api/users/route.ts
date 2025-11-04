@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { requireRole } from "@/lib/auth-helpers"
 import { UserService } from "@/lib/services/user.service"
 import { z } from "zod"
 
@@ -15,20 +14,11 @@ const createUserSchema = z.object({
 // GET /api/users - List users
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Only admins can list users
-    if (session.user.role !== "SUPER_ADMIN" && session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
+    await requireRole(["SUPER_ADMIN", "ADMIN"], request)
 
     const { searchParams } = new URL(request.url)
     const filters = {
-      role: searchParams.get("role") || undefined,
+      role: searchParams.get("role") as any || undefined,
       storeId: searchParams.get("storeId") || undefined,
       isActive: searchParams.get("isActive") ? searchParams.get("isActive") === "true" : undefined,
       search: searchParams.get("search") || undefined,
@@ -49,23 +39,14 @@ export async function GET(request: NextRequest) {
 // POST /api/users - Create user
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Only admins can create users
-    if (session.user.role !== "SUPER_ADMIN" && session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
+    const authUser = await requireRole(["SUPER_ADMIN", "ADMIN"], request)
 
     const body = await request.json()
     const validatedData = createUserSchema.parse(body)
 
     const user = await UserService.createUser({
       ...validatedData,
-      createdById: session.user.id,
+      createdById: authUser.id,
     })
 
     return NextResponse.json(user, { status: 201 })

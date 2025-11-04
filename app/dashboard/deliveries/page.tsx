@@ -138,7 +138,7 @@ export default function DeliveriesPage() {
                 <CardTitle>Delivery Management</CardTitle>
                 <CardDescription>View and manage all deliveries</CardDescription>
               </div>
-              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "calendar" | "list")}>
+              <Tabs value={viewMode} defaultValue="list" onValueChange={(v) => setViewMode(v as "calendar" | "list")}>
                 <TabsList>
                   <TabsTrigger value="list">
                     <List className="mr-2 h-4 w-4" />
@@ -153,7 +153,7 @@ export default function DeliveriesPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "calendar" | "list")}>
+            <Tabs defaultValue={viewMode} value={viewMode} onValueChange={(v) => setViewMode(v as "calendar" | "list")}>
               <TabsContent value="list" className="mt-0">
                 <DeliveriesList
                   deliveries={mockDeliveries}
