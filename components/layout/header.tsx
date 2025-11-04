@@ -1,8 +1,12 @@
 "use client"
 
-import { Search, User } from "lucide-react"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Search, User, Settings, LogOut, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { NotificationBell } from "@/components/notifications/notification-bell"
+import { useCurrentUser } from "@/hooks/use-user"
+import { useToast } from "@/hooks/use-toast"
 
 // Mock notifications - in production, fetch from API
 const mockNotifications = [
@@ -35,6 +39,35 @@ const mockNotifications = [
 ]
 
 export function Header() {
+  const router = useRouter()
+  const { data: user, loading } = useCurrentUser()
+  const toast = useToast()
+  const [showMenu, setShowMenu] = useState(false)
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/auth/signout", {
+        method: "POST",
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        toast.success("Logged out successfully")
+        router.push("/login")
+      } else {
+        toast.error("Failed to logout", "Please try again")
+      }
+    } catch (error) {
+      toast.error("Error logging out", "Please try again")
+    }
+  }
+
+  const getRoleDisplay = (role?: string) => {
+    if (!role) return "User"
+    return role.split("_").map(word => 
+      word.charAt(0) + word.slice(1).toLowerCase()
+    ).join(" ")
+  }
 
   return (
     <header className="sticky top-0 z-40 w-full glass-dark border-b border-gold/20">
@@ -57,19 +90,73 @@ export function Header() {
           <NotificationBell notifications={mockNotifications} />
 
           {/* User Profile */}
-          <div className="flex items-center gap-3 pl-4 border-l border-gold/20">
+          <div className="relative flex items-center gap-3 pl-4 border-l border-gold/20">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-semibold text-foreground">John Doe</p>
-              <p className="text-xs text-foreground/60">Admin</p>
+              {loading ? (
+                <>
+                  <p className="text-sm font-semibold text-foreground">Loading...</p>
+                  <p className="text-xs text-foreground/60">...</p>
+                </>
+              ) : user ? (
+                <>
+                  <p className="text-sm font-semibold text-foreground">{user.name}</p>
+                  <p className="text-xs text-foreground/60">{getRoleDisplay(user.role)}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold text-foreground">User</p>
+                  <p className="text-xs text-foreground/60">Unknown</p>
+                </>
+              )}
             </div>
-            <Button
-              variant="ghost"
-              className="rounded-xl hover:bg-white/50 transition-all duration-300"
-            >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center glow-gold-sm">
-                <User className="w-5 h-5 text-white" />
-              </div>
-            </Button>
+            <div className="relative">
+              <Button
+                variant="ghost"
+                onClick={() => setShowMenu(!showMenu)}
+                className="rounded-xl hover:bg-white/50 transition-all duration-300"
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center glow-gold-sm">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                <ChevronDown className="w-4 h-4 ml-1 text-foreground/60" />
+              </Button>
+
+              {/* Dropdown Menu */}
+              {showMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowMenu(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-2 w-48 rounded-xl glass border border-gold/20 shadow-lg glow-gold-sm z-50 overflow-hidden">
+                    <div className="p-2">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start gap-2 hover:bg-white/50"
+                        onClick={() => {
+                          setShowMenu(false)
+                          router.push("/dashboard/settings")
+                        }}
+                      >
+                        <Settings className="w-4 h-4" />
+                        Settings
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start gap-2 hover:bg-red-50/50 text-red-600 hover:text-red-700"
+                        onClick={() => {
+                          setShowMenu(false)
+                          handleLogout()
+                        }}
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

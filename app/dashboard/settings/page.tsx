@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,13 +8,19 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Mail, Lock, Bell, Shield } from "lucide-react"
+import { User, Lock, Bell, Shield, Loader2 } from "lucide-react"
+import { useCurrentUser, useUpdateUser, useUpdatePassword } from "@/hooks/use-user"
+import { useToast } from "@/hooks/use-toast"
 
 export default function SettingsPage() {
+  const { data: user, loading: userLoading, refetch: refetchUser } = useCurrentUser()
+  const { mutate: updateUser, loading: updateLoading } = useUpdateUser()
+  const { mutate: updatePassword, loading: passwordLoading } = useUpdatePassword()
+  const toast = useToast()
+
   const [profileData, setProfileData] = useState({
-    name: "John Doe",
-    email: "john.doe@pommyfoods.com",
-    phone: "+1 234-567-8900",
+    name: "",
+    email: "",
   })
 
   const [passwordData, setPasswordData] = useState({
@@ -30,27 +36,77 @@ export default function SettingsPage() {
     paymentReminders: true,
   })
 
-  const handleProfileUpdate = () => {
-    // TODO: API call to update profile
-    alert("Profile updated successfully!")
+  // Load user data when available
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name: user.name || "",
+        email: user.email || "",
+      })
+    }
+  }, [user])
+
+  const handleProfileUpdate = async () => {
+    if (!user) return
+
+    try {
+      await updateUser({
+        name: profileData.name,
+        email: profileData.email,
+      })
+      toast.success("Profile updated successfully")
+      refetchUser()
+    } catch (error: any) {
+      toast.error("Failed to update profile", error?.message || "Please try again")
+    }
   }
 
-  const handlePasswordUpdate = () => {
+  const handlePasswordUpdate = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert("New passwords do not match")
+      toast.error("Passwords do not match", "Please ensure both passwords are the same")
       return
     }
     if (passwordData.newPassword.length < 6) {
-      alert("Password must be at least 6 characters")
+      toast.error("Password too short", "Password must be at least 6 characters")
       return
     }
-    // TODO: API call to update password
-    alert("Password updated successfully!")
-    setPasswordData({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    })
+
+    try {
+      await updatePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      })
+      toast.success("Password updated successfully")
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      })
+    } catch (error: any) {
+      toast.error("Failed to update password", error?.message || "Please check your current password")
+    }
+  }
+
+  const handleNotificationSave = () => {
+    // TODO: API call to save notification preferences
+    toast.success("Notification preferences saved")
+  }
+
+  const getRoleDisplay = (role?: string) => {
+    if (!role) return "User"
+    return role.split("_").map(word => 
+      word.charAt(0) + word.slice(1).toLowerCase()
+    ).join(" ")
+  }
+
+  if (userLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-gold" />
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (
@@ -94,6 +150,7 @@ export default function SettingsPage() {
                     onChange={(e) =>
                       setProfileData({ ...profileData, name: e.target.value })
                     }
+                    disabled={updateLoading}
                   />
                 </div>
 
@@ -106,26 +163,26 @@ export default function SettingsPage() {
                     onChange={(e) =>
                       setProfileData({ ...profileData, email: e.target.value })
                     }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={profileData.phone}
-                    onChange={(e) =>
-                      setProfileData({ ...profileData, phone: e.target.value })
-                    }
+                    disabled={updateLoading}
                   />
                 </div>
 
                 <Separator />
 
                 <div className="flex justify-end">
-                  <Button onClick={handleProfileUpdate} className="glow-gold-sm">
-                    Save Changes
+                  <Button 
+                    onClick={handleProfileUpdate} 
+                    className="glow-gold-sm"
+                    disabled={updateLoading}
+                  >
+                    {updateLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Changes"
+                    )}
                   </Button>
                 </div>
               </CardContent>
@@ -149,6 +206,7 @@ export default function SettingsPage() {
                     onChange={(e) =>
                       setPasswordData({ ...passwordData, currentPassword: e.target.value })
                     }
+                    disabled={passwordLoading}
                   />
                 </div>
 
@@ -161,6 +219,7 @@ export default function SettingsPage() {
                     onChange={(e) =>
                       setPasswordData({ ...passwordData, newPassword: e.target.value })
                     }
+                    disabled={passwordLoading}
                   />
                   <p className="text-xs text-foreground/60">
                     Password must be at least 6 characters long
@@ -176,14 +235,26 @@ export default function SettingsPage() {
                     onChange={(e) =>
                       setPasswordData({ ...passwordData, confirmPassword: e.target.value })
                     }
+                    disabled={passwordLoading}
                   />
                 </div>
 
                 <Separator />
 
                 <div className="flex justify-end">
-                  <Button onClick={handlePasswordUpdate} className="glow-gold-sm">
-                    Update Password
+                  <Button 
+                    onClick={handlePasswordUpdate} 
+                    className="glow-gold-sm"
+                    disabled={passwordLoading}
+                  >
+                    {passwordLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      "Update Password"
+                    )}
                   </Button>
                 </div>
               </CardContent>
@@ -200,9 +271,15 @@ export default function SettingsPage() {
                     <Shield className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold">Admin</p>
+                    <p className="font-semibold">{getRoleDisplay(user?.role)}</p>
                     <p className="text-sm text-foreground/60">
-                      Full access to all system features
+                      {user?.role === "SUPER_ADMIN" || user?.role === "ADMIN"
+                        ? "Full access to all system features"
+                        : user?.role === "STORE_OWNER" || user?.role === "STORE_MANAGER"
+                        ? "Access to store management features"
+                        : user?.role === "DRIVER"
+                        ? "Access to delivery features"
+                        : "Access to kitchen features"}
                     </p>
                   </div>
                 </div>
@@ -306,10 +383,7 @@ export default function SettingsPage() {
 
                 <div className="flex justify-end">
                   <Button
-                    onClick={() => {
-                      // TODO: API call to save notification preferences
-                      alert("Notification preferences saved!")
-                    }}
+                    onClick={handleNotificationSave}
                     className="glow-gold-sm"
                   >
                     Save Preferences
@@ -323,4 +397,3 @@ export default function SettingsPage() {
     </DashboardLayout>
   )
 }
-

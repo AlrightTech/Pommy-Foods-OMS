@@ -100,7 +100,24 @@ export function Sidebar() {
         >
           <Settings className="w-6 h-6" />
         </Link>
-        <button className="w-full h-16 rounded-xl text-red-500/60 hover:text-red-500 hover:bg-white/50 glass flex items-center justify-center transition-all duration-300 hover:scale-105">
+        <button
+          onClick={async () => {
+            try {
+              const response = await fetch("/api/auth/signout", {
+                method: "POST",
+                credentials: "include",
+              })
+              if (response.ok) {
+                window.location.href = "/login"
+              }
+            } catch (error) {
+              console.error("Logout error:", error)
+              window.location.href = "/login"
+            }
+          }}
+          className="w-full h-16 rounded-xl text-red-500/60 hover:text-red-500 hover:bg-white/50 glass flex items-center justify-center transition-all duration-300 hover:scale-105"
+          title="Logout"
+        >
           <LogOut className="w-6 h-6" />
         </button>
       </div>
