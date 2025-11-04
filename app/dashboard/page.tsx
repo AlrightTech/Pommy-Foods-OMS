@@ -1,8 +1,10 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { 
   ShoppingCart, 
   TrendingUp, 
@@ -11,7 +13,10 @@ import {
   DollarSign,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  FileText,
+  Store
 } from "lucide-react"
 
 const stats = [
@@ -57,6 +62,24 @@ const recentOrders = [
 ]
 
 export default function DashboardPage() {
+  const router = useRouter()
+
+  const handleNewOrder = () => {
+    router.push("/dashboard/orders/new")
+  }
+
+  const handleAddProduct = () => {
+    router.push("/dashboard/products")
+  }
+
+  const handleViewReports = () => {
+    router.push("/dashboard/analytics")
+  }
+
+  const handleManageStores = () => {
+    router.push("/dashboard/stores")
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-8 animate-fade-in">
@@ -143,18 +166,37 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
-                <button className="p-4 rounded-xl bg-gradient-to-br from-gold to-gold-dark text-white font-medium hover:scale-105 transition-all duration-300 glow-gold-sm">
-                  New Order
-                </button>
-                <button className="p-4 rounded-xl glass border border-gold/20 text-foreground font-medium hover:scale-105 transition-all duration-300 hover:border-gold/40">
-                  Add Product
-                </button>
-                <button className="p-4 rounded-xl glass border border-gold/20 text-foreground font-medium hover:scale-105 transition-all duration-300 hover:border-gold/40">
-                  View Reports
-                </button>
-                <button className="p-4 rounded-xl glass border border-gold/20 text-foreground font-medium hover:scale-105 transition-all duration-300 hover:border-gold/40">
-                  Manage Stores
-                </button>
+                <Button
+                  onClick={handleNewOrder}
+                  className="h-24 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-gold to-gold-dark text-white font-medium hover:scale-105 transition-all duration-300 glow-gold-sm active:scale-95"
+                >
+                  <ShoppingCart className="h-6 w-6" />
+                  <span>New Order</span>
+                </Button>
+                <Button
+                  onClick={handleAddProduct}
+                  variant="outline"
+                  className="h-24 flex flex-col items-center justify-center gap-2 glass border border-gold/20 text-foreground font-medium hover:scale-105 transition-all duration-300 hover:border-gold/40 active:scale-95 hover:bg-gold/10"
+                >
+                  <Plus className="h-6 w-6" />
+                  <span>Add Product</span>
+                </Button>
+                <Button
+                  onClick={handleViewReports}
+                  variant="outline"
+                  className="h-24 flex flex-col items-center justify-center gap-2 glass border border-gold/20 text-foreground font-medium hover:scale-105 transition-all duration-300 hover:border-gold/40 active:scale-95 hover:bg-gold/10"
+                >
+                  <FileText className="h-6 w-6" />
+                  <span>View Reports</span>
+                </Button>
+                <Button
+                  onClick={handleManageStores}
+                  variant="outline"
+                  className="h-24 flex flex-col items-center justify-center gap-2 glass border border-gold/20 text-foreground font-medium hover:scale-105 transition-all duration-300 hover:border-gold/40 active:scale-95 hover:bg-gold/10"
+                >
+                  <Store className="h-6 w-6" />
+                  <span>Manage Stores</span>
+                </Button>
               </div>
             </CardContent>
           </Card>
