@@ -145,7 +145,14 @@ The database schema is defined in `prisma/schema.prisma`. Key models:
 
 ## Deployment
 
+### Quick Start (20 minutes)
+See [QUICK_START_DEPLOYMENT.md](./QUICK_START_DEPLOYMENT.md) for a quick deployment guide.
+
+### Full Deployment Guide
 See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions for Supabase + Vercel.
+
+### CI/CD Pipeline Setup
+See [CICD_SETUP.md](./CICD_SETUP.md) for automated CI/CD pipeline configuration.
 
 ### Quick Deploy
 

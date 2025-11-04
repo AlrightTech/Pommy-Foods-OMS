@@ -41,3 +41,6 @@ next-env.d.ts
 
 # prisma
 /prisma/migrations
+# Keep migrations directory structure but ignore migration files
+# Uncomment if you want to ignore all migrations:
+# prisma/migrations/**/*

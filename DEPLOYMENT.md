@@ -1,6 +1,8 @@
 # Deployment Guide - Pommy Foods
 
-This guide covers deploying Pommy Foods to **Supabase** (database) and **Vercel** (hosting).
+This guide covers deploying Pommy Foods to **Supabase** (database) and **Vercel** (hosting) with **CI/CD automation**.
+
+> **📚 For CI/CD Pipeline Setup**: See [CICD_SETUP.md](./CICD_SETUP.md) for detailed CI/CD configuration and automation.
 
 ## Prerequisites
 
