@@ -25,7 +25,7 @@ interface Invoice {
   storeName: string
   totalAmount: number
   status: InvoiceStatus
-  dueDate: Date
+  dueDate: Date | undefined
   issuedAt: Date
   paidAt?: Date
 }
@@ -110,7 +110,7 @@ export function InvoicesTable({ invoices, onDownload }: InvoicesTableProps) {
             ) : (
               filteredInvoices.map((invoice) => {
                 const status = statusConfig[invoice.status]
-                const overdue = isOverdue(invoice.dueDate) && invoice.status !== "PAID"
+                const overdue = invoice.dueDate ? isOverdue(invoice.dueDate) && invoice.status !== "PAID" : false
 
                 return (
                   <TableRow key={invoice.id}>
@@ -122,7 +122,7 @@ export function InvoicesTable({ invoices, onDownload }: InvoicesTableProps) {
                     </TableCell>
                     <TableCell>
                       <span className={overdue ? "text-red-600 font-medium" : "text-foreground/60"}>
-                        {invoice.dueDate.toLocaleDateString()}
+                        {invoice.dueDate ? invoice.dueDate.toLocaleDateString() : "N/A"}
                       </span>
                     </TableCell>
                     <TableCell>

@@ -54,8 +54,13 @@ export function NotificationBell() {
     // Mark as read if unread
     if (!notification.isRead) {
       try {
-        await markAsRead({}, `/api/notifications/${notification.id}/read`)
-        refetchNotifications()
+        const response = await fetch(`/api/notifications/${notification.id}/read`, {
+          method: "PUT",
+          credentials: "include",
+        })
+        if (response.ok) {
+          refetchNotifications()
+        }
       } catch (error: any) {
         toast.error("Failed to mark as read", error?.message || "Please try again")
       }

@@ -18,6 +18,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { InvoiceStatus, PaymentMethod } from "@/types"
+import type { InvoicePDFData } from "@/lib/utils/pdf-generator"
+import { useToast } from "@/hooks/use-toast"
 
 // Mock invoice data
 const mockInvoice = {
@@ -60,6 +62,7 @@ const mockInvoice = {
 export default function InvoiceDetailsPage() {
   const params = useParams()
   const router = useRouter()
+  const toast = useToast()
   const [invoice] = useState(mockInvoice)
 
   const totalPaid = invoice.payments.reduce((sum, p) => sum + p.amount, 0)
@@ -86,7 +89,7 @@ export default function InvoiceDetailsPage() {
         const data = await response.json()
         // Generate PDF from data using jsPDF
         const { downloadInvoicePDF } = await import("@/lib/utils/pdf-generator")
-        downloadInvoicePDF(data)
+        downloadInvoicePDF(data as InvoicePDFData)
         toast.success("Invoice PDF downloaded successfully")
       } else {
         const error = await response.json()

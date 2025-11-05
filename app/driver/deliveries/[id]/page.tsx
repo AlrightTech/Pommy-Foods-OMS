@@ -119,7 +119,7 @@ export default function DeliveryExecutionPage() {
     if (!delivery) return
     
     // Get invoice ID from delivery's order
-    const invoiceId = delivery.order?.invoiceId || ""
+    const invoiceId = (delivery.order as any)?.invoiceId || ""
     
     if (!invoiceId) {
       toast.error("Invoice Not Found", "No invoice found for this delivery")
@@ -147,13 +147,13 @@ export default function DeliveryExecutionPage() {
   }
 
   // Format delivery items
-  const deliveryItems = delivery?.order?.items?.map((item: any) => ({
+  const deliveryItems = (delivery?.order as any)?.items?.map((item: any) => ({
     productName: item.product?.name || "Unknown Product",
     quantity: item.quantity || 0,
   })) || []
 
   // Calculate invoice amount (from order totalAmount)
-  const invoiceAmount = delivery?.order?.totalAmount || 0
+  const invoiceAmount = (delivery?.order as any)?.totalAmount || 0
 
   // Get products for return entry
   const productsForReturn = products || []
@@ -241,8 +241,8 @@ export default function DeliveryExecutionPage() {
             <GPSTracker
               destination={{
                 address: delivery.deliveryAddress,
-                latitude: delivery.store?.latitude || 0,
-                longitude: delivery.store?.longitude || 0,
+                latitude: (delivery.store as any)?.latitude || 0,
+                longitude: (delivery.store as any)?.longitude || 0,
               }}
             />
 
@@ -259,7 +259,7 @@ export default function DeliveryExecutionPage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {deliveryItems.map((item, index) => (
+                    {deliveryItems.map((item: any, index: number) => (
                       <div
                         key={index}
                         className="flex items-center justify-between p-3 rounded-xl glass border border-gold/20"

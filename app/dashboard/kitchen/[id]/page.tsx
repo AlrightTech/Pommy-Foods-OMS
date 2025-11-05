@@ -21,7 +21,7 @@ export default function KitchenSheetDetailsPage() {
 
   const handleItemUpdate = async (itemId: string, updates: any) => {
     try {
-      await updateItem.mutate(itemId, updates)
+      await updateItem(itemId, updates)
       toast.success("Item updated successfully")
       refetch()
     } catch (error: any) {

@@ -56,14 +56,20 @@ export default function NotificationsPage() {
 
   const unreadCount = notificationsData?.unreadCount || 0
 
-  const { mutate: markAsRead, loading: markReadLoading } = useMarkNotificationRead("")
   const { mutate: markAllAsRead, loading: markAllReadLoading } = useMarkAllNotificationsRead()
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      await markAsRead({}, `/api/notifications/${notificationId}/read`)
-      toast.success("Notification marked as read")
-      refetchNotifications()
+      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+        method: "PUT",
+        credentials: "include",
+      })
+      if (response.ok) {
+        toast.success("Notification marked as read")
+        refetchNotifications()
+      } else {
+        throw new Error("Failed to mark as read")
+      }
     } catch (error: any) {
       toast.error("Failed to mark as read", error?.message || "Please try again")
     }
@@ -180,8 +186,8 @@ export default function NotificationsPage() {
                   </div>
                 ) : (
                   notifications.map((notification: any) => {
-                    const Icon = typeIcons[notification.type]
-                    const iconColor = typeColors[notification.type]
+                    const Icon = typeIcons[notification.type as keyof typeof typeIcons]
+                    const iconColor = typeColors[notification.type as keyof typeof typeColors]
                     const createdAt = new Date(notification.createdAt)
 
                     return (

@@ -49,10 +49,10 @@ export default function OrderDetailsPage() {
             productId: item.productId,
             quantity: item.quantity,
           }))
-        : order.items.map((item: any) => ({
+        : (order as any).items?.map((item: any) => ({
             productId: item.productId,
             quantity: item.quantity,
-          }))
+          })) || []
       
       const response = await fetch(`/api/orders/${orderId}/items`, {
         method: "PUT",
@@ -100,7 +100,7 @@ export default function OrderDetailsPage() {
   }
 
   // Format order items for the editor
-  const formattedItems = order?.items?.map((item: any) => ({
+  const formattedItems = (order as any)?.items?.map((item: any) => ({
     id: item.id,
     productId: item.productId,
     productName: item.product?.name || "Unknown Product",
@@ -245,7 +245,7 @@ export default function OrderDetailsPage() {
                   <div>
                     <p className="text-sm text-foreground/60">Store</p>
                     <p className="font-semibold">
-                      {order.store?.name || "Unknown Store"}
+                      {(order as any).store?.name || "Unknown Store"}
                     </p>
                   </div>
                 </div>

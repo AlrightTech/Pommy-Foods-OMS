@@ -11,6 +11,7 @@ import { useInvoices } from "@/hooks/use-invoices"
 import { useCurrentUser } from "@/hooks/use-user"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
+import type { InvoicePDFData } from "@/lib/utils/pdf-generator"
 
 export default function StoreInvoicesPage() {
   const { data: user } = useCurrentUser()
@@ -29,7 +30,7 @@ export default function StoreInvoicesPage() {
         const data = await response.json()
         // Generate PDF from data using jsPDF
         const { downloadInvoicePDF } = await import("@/lib/utils/pdf-generator")
-        downloadInvoicePDF(data)
+        downloadInvoicePDF(data as InvoicePDFData)
         toast.success("Invoice PDF downloaded successfully")
       } else {
         const error = await response.json()
