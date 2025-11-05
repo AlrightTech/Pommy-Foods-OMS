@@ -55,6 +55,11 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Root path - allow access (landing page handles redirect)
+  if (pathname === "/") {
+    return NextResponse.next()
+  }
+
   return NextResponse.next()
 }
 

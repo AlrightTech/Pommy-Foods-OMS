@@ -10,6 +10,7 @@ import Link from "next/link"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const toast = useToast()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -29,8 +30,18 @@ export default function LoginPage() {
 
       if (result?.ok) {
         toast.success("Login successful!")
-        // Redirect based on user role
-        router.push("/dashboard")
+        
+        // Get callback URL if provided
+        const callbackUrl = searchParams.get("callbackUrl")
+        
+        if (callbackUrl) {
+          // Redirect to the originally requested page
+          router.push(callbackUrl)
+        } else {
+          // Redirect to landing page which will handle role-based redirect
+          router.push("/")
+        }
+        
         router.refresh()
       }
     } catch (error: any) {
