@@ -218,7 +218,10 @@ export default function AnalyticsPage() {
                   </CardContent>
                 </Card>
 
-                <ProductPerformanceChart data={productData} loading={productLoading} />
+                <ProductPerformanceChart 
+                  data={productData ?? undefined} 
+                  loading={productLoading} 
+                />
               </div>
             )}
           </TabsContent>

@@ -13,7 +13,7 @@ interface ProductPerformanceData {
 }
 
 interface ProductPerformanceChartProps {
-  data?: ProductPerformanceData[]
+  data?: ProductPerformanceData[] | null
   loading?: boolean
 }
 
