@@ -1,5 +1,12 @@
 import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
+import { config } from "dotenv"
+import { resolve } from "path"
+
+// Load environment variables from .env.local (priority) or .env
+// This ensures environment variables are loaded before Prisma Client initialization
+config({ path: resolve(process.cwd(), ".env.local") })
+config({ path: resolve(process.cwd(), ".env") })
 
 const prisma = new PrismaClient()
 

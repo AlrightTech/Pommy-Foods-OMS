@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useSalesAnalytics, useProductAnalytics, useStoreAnalytics, useDeliveryMetrics } from "@/hooks/use-analytics"
 import { useDashboardStats } from "@/hooks/use-dashboard"
 import { ProductPerformanceChart } from "@/components/charts/product-performance-chart"
+import { SalesChart } from "@/components/charts/sales-chart"
 import { useToast } from "@/hooks/use-toast"
 
 export default function AnalyticsPage() {
@@ -25,7 +26,8 @@ export default function AnalyticsPage() {
   // Format sales data for chart
   const salesChartData = salesData?.timeSeries?.map((point: any) => ({
     date: point.date,
-    sales: Number(point.revenue || 0),
+    revenue: Number(point.revenue || 0),
+    orders: Number(point.orders || 0),
   })) || []
 
   // Format top products
@@ -167,8 +169,7 @@ export default function AnalyticsPage() {
             ) : (
               <SalesChart
                 data={salesChartData}
-                title="Sales Overview"
-                description="Daily sales performance over time"
+                loading={salesLoading}
               />
             )}
           </TabsContent>

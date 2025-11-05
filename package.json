@@ -13,6 +13,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:check-env": "node scripts/check-env.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -47,11 +48,13 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@dotenvx/dotenvx": "^1.51.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.14.12",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",
+    "dotenv": "^17.2.3",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.0",
     "postcss": "^8.4.40",

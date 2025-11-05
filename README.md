@@ -47,14 +47,21 @@ A comprehensive order management system for Pommy Foods, built with Next.js 14, 
 
 3. **Set up environment variables**
    ```bash
-   cp .env.example .env
+   # Create .env.local file (recommended for local development)
+   # Copy from .env.example if you need a template
    ```
    
-   Update `.env` with your configuration:
+   Create `.env.local` in the project root with your configuration:
    ```env
    DATABASE_URL="postgresql://user:password@localhost:5432/pommy_foods"
    NEXTAUTH_SECRET="your-secret-key-here"
    NEXTAUTH_URL="http://localhost:3000"
+   ADMIN_PASSWORD="admin123"  # Optional
+   ```
+   
+   **Verify environment variables**:
+   ```bash
+   npm run db:check-env
    ```
 
 4. **Set up database**
@@ -116,6 +123,7 @@ pommy-foods/
 - `npm run db:migrate` - Run database migrations
 - `npm run db:push` - Push schema changes (dev)
 - `npm run db:seed` - Seed database with initial data
+- `npm run db:check-env` - Verify environment variables are set
 - `npm run db:studio` - Open Prisma Studio
 
 ## Database Schema
