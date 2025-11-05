@@ -13,7 +13,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const body = await request.json()
     const validatedData = uploadReceiptSchema.parse(body)

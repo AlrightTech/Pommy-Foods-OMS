@@ -5,7 +5,7 @@ import { TemperatureService } from "@/lib/services/temperature.service"
 // GET /api/temperature/compliance - Get compliance statistics
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth()
+    await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     const filters = {

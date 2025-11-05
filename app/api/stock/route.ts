@@ -13,7 +13,7 @@ const updateStockSchema = z.object({
 // GET /api/stock - List stock levels
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 // POST /api/stock - Update stock level
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const body = await request.json()
     const validatedData = updateStockSchema.parse(body)

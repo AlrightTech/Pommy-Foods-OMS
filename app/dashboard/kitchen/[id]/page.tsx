@@ -1,70 +1,84 @@
 "use client"
 
-import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { KitchenItemCard } from "@/components/kitchen/kitchen-item-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, CheckCircle2 } from "lucide-react"
-
-// Mock data
-const mockKitchenSheet = {
-  id: "1",
-  orderNumber: "ORD-001",
-  status: "IN_PROGRESS" as "PENDING" | "IN_PROGRESS" | "COMPLETED",
-  createdAt: new Date("2024-01-15"),
-  items: [
-    {
-      id: "1",
-      productName: "Pommy Meal - Chicken",
-      productSku: "PM-CH-001",
-      quantity: 20,
-      batchNumber: undefined,
-      expiryDate: undefined,
-      isPacked: false,
-    },
-    {
-      id: "2",
-      productName: "Pommy Meal - Beef",
-      productSku: "PM-BF-001",
-      quantity: 15,
-      batchNumber: "BATCH-2024-001",
-      expiryDate: new Date("2024-01-25"),
-      isPacked: true,
-      barcode: "BC120240115",
-      qrCode: "QR120240115",
-    },
-  ],
-}
+import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react"
+import { useKitchenSheet, useUpdateKitchenItem, useCompleteKitchenSheet } from "@/hooks/use-kitchen"
+import { useToast } from "@/hooks/use-toast"
 
 export default function KitchenSheetDetailsPage() {
   const params = useParams()
   const router = useRouter()
-  const [sheet, setSheet] = useState(mockKitchenSheet)
+  const sheetId = params.id as string
+  const { data: sheet, loading, refetch } = useKitchenSheet(sheetId)
+  const { mutate: updateItem } = useUpdateKitchenItem(sheetId)
+  const { mutate: completeSheet } = useCompleteKitchenSheet(sheetId)
+  const toast = useToast()
 
-  const handleItemUpdate = (itemId: string, updates: any) => {
-    setSheet({
-      ...sheet,
-      items: sheet.items.map((item) =>
-        item.id === itemId ? { ...item, ...updates } : item
-      ),
-    })
-  }
-
-  const handleCompleteSheet = () => {
-    if (confirm("Mark this kitchen sheet as completed?")) {
-      setSheet({
-        ...sheet,
-        status: "COMPLETED" as const,
-      })
-      // TODO: API call to complete sheet
+  const handleItemUpdate = async (itemId: string, updates: any) => {
+    try {
+      await updateItem.mutate(itemId, updates)
+      toast.success("Item updated successfully")
+      refetch()
+    } catch (error: any) {
+      toast.error("Failed to update item", error?.message || "Please try again")
     }
   }
 
-  const allPacked = sheet.items.every((item) => item.isPacked)
-  const canComplete = sheet.status !== "COMPLETED" && allPacked
+  const handleCompleteSheet = async () => {
+    if (confirm("Mark this kitchen sheet as completed?")) {
+      try {
+        await completeSheet()
+        toast.success("Kitchen sheet completed successfully")
+        refetch()
+      } catch (error: any) {
+        toast.error("Failed to complete sheet", error?.message || "Please try again")
+      }
+    }
+  }
+
+  // Format items for KitchenItemCard
+  const formattedItems = sheet?.items?.map((item: any) => ({
+    id: item.id,
+    productName: item.product?.name || "Unknown Product",
+    productSku: item.product?.sku || "",
+    quantity: item.quantity,
+    batchNumber: item.batchNumber || undefined,
+    expiryDate: item.expiryDate ? new Date(item.expiryDate) : undefined,
+    isPacked: item.isPacked || false,
+    barcode: item.barcode || undefined,
+    qrCode: item.qrCode || undefined,
+  })) || []
+
+  const allPacked = formattedItems.length > 0 && formattedItems.every((item) => item.isPacked)
+  const canComplete = sheet && sheet.status !== "COMPLETED" && allPacked
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-gold" />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!sheet) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-12">
+          <p className="text-foreground/60">Kitchen sheet not found</p>
+          <Button onClick={() => router.back()} className="mt-4">
+            Go Back
+          </Button>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   return (
     <DashboardLayout>
@@ -78,7 +92,7 @@ export default function KitchenSheetDetailsPage() {
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold text-gradient-gold">
-                  {sheet.orderNumber}
+                  {sheet.order?.orderNumber || "N/A"}
                 </h1>
                 <Badge
                   variant={
@@ -104,16 +118,24 @@ export default function KitchenSheetDetailsPage() {
         </div>
 
         {/* Items Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sheet.items.map((item) => (
-            <KitchenItemCard
-              key={item.id}
-              item={item}
-              onUpdate={handleItemUpdate}
-              readonly={sheet.status === "COMPLETED"}
-            />
-          ))}
-        </div>
+        {formattedItems.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {formattedItems.map((item) => (
+              <KitchenItemCard
+                key={item.id}
+                item={item}
+                onUpdate={(itemId, updates) => handleItemUpdate(itemId, updates)}
+                readonly={sheet.status === "COMPLETED"}
+              />
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-foreground/60">No items in this kitchen sheet</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Summary */}
         <Card>
@@ -124,24 +146,24 @@ export default function KitchenSheetDetailsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <p className="text-sm text-foreground/60">Total Items</p>
-                <p className="text-2xl font-bold">{sheet.items.length}</p>
+                <p className="text-2xl font-bold">{formattedItems.length}</p>
               </div>
               <div>
                 <p className="text-sm text-foreground/60">Packed</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {sheet.items.filter((i) => i.isPacked).length}
+                  {formattedItems.filter((i) => i.isPacked).length}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-foreground/60">Pending</p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  {sheet.items.filter((i) => !i.isPacked).length}
+                  {formattedItems.filter((i) => !i.isPacked).length}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-foreground/60">Total Quantity</p>
                 <p className="text-2xl font-bold">
-                  {sheet.items.reduce((sum, i) => sum + i.quantity, 0)}
+                  {formattedItems.reduce((sum, i) => sum + i.quantity, 0)}
                 </p>
               </div>
             </div>
@@ -151,4 +173,3 @@ export default function KitchenSheetDetailsPage() {
     </DashboardLayout>
   )
 }
-

@@ -5,29 +5,31 @@ import { Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { NotificationList } from "./notification-list"
 import { useRouter } from "next/navigation"
+import { useNotifications, useMarkNotificationRead } from "@/hooks/use-notifications"
+import { useToast } from "@/hooks/use-toast"
 
-interface Notification {
-  id: string
-  title: string
-  message: string
-  type: "ORDER_APPROVED" | "ORDER_REJECTED" | "DELIVERY_ASSIGNED" | "PAYMENT_RECEIVED" | "INVOICE_GENERATED" | "STOCK_LOW" | "TEMPERATURE_ALERT"
-  isRead: boolean
-  createdAt: Date
-  relatedId?: string
-}
-
-interface NotificationBellProps {
-  notifications?: Notification[]
-  unreadCount?: number
-}
-
-export function NotificationBell({ notifications = [], unreadCount }: NotificationBellProps) {
+export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+  const toast = useToast()
+  
+  // Fetch recent notifications (last 10)
+  const { data: notificationsData, loading: notificationsLoading, refetch: refetchNotifications } = useNotifications()
+  
+  const notifications = notificationsData?.notifications?.slice(0, 10) || []
+  const unreadCount = notificationsData?.unreadCount || 0
 
-  // Calculate unread count if not provided
-  const count = unreadCount ?? notifications.filter((n) => !n.isRead).length
+  const { mutate: markAsRead } = useMarkNotificationRead("")
+
+  // Poll for new notifications every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetchNotifications()
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [refetchNotifications])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -46,8 +48,18 @@ export function NotificationBell({ notifications = [], unreadCount }: Notificati
     }
   }, [isOpen])
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = async (notification: any) => {
     setIsOpen(false)
+    
+    // Mark as read if unread
+    if (!notification.isRead) {
+      try {
+        await markAsRead({}, `/api/notifications/${notification.id}/read`)
+        refetchNotifications()
+      } catch (error: any) {
+        toast.error("Failed to mark as read", error?.message || "Please try again")
+      }
+    }
     
     // Navigate to related page based on type
     if (notification.relatedId) {
@@ -57,7 +69,7 @@ export function NotificationBell({ notifications = [], unreadCount }: Notificati
           router.push(`/dashboard/orders/${notification.relatedId}`)
           break
         case "DELIVERY_ASSIGNED":
-          router.push(`/dashboard/deliveries/${notification.relatedId}`)
+          router.push(`/dashboard/deliveries`)
           break
         case "PAYMENT_RECEIVED":
         case "INVOICE_GENERATED":
@@ -77,6 +89,17 @@ export function NotificationBell({ notifications = [], unreadCount }: Notificati
     }
   }
 
+  // Format notifications for NotificationList component
+  const formattedNotifications = notifications.map((n: any) => ({
+    id: n.id,
+    title: n.title,
+    message: n.message,
+    type: n.type,
+    isRead: n.isRead,
+    createdAt: new Date(n.createdAt),
+    relatedId: n.relatedId,
+  }))
+
   return (
     <div className="relative" ref={dropdownRef}>
       <Button
@@ -86,9 +109,9 @@ export function NotificationBell({ notifications = [], unreadCount }: Notificati
         onClick={() => setIsOpen(!isOpen)}
       >
         <Bell className="w-5 h-5 text-foreground/70" />
-        {count > 0 && (
+        {unreadCount > 0 && (
           <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-gradient-to-br from-gold to-gold-dark text-white text-xs font-semibold flex items-center justify-center glow-gold-sm animate-pulse">
-            {count > 9 ? "9+" : count}
+            {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </Button>
@@ -96,16 +119,16 @@ export function NotificationBell({ notifications = [], unreadCount }: Notificati
       {isOpen && (
         <div className="absolute right-0 top-12 w-80 sm:w-96 z-50">
           <NotificationList
-            notifications={notifications}
+            notifications={formattedNotifications}
             onNotificationClick={handleNotificationClick}
             onViewAll={() => {
               setIsOpen(false)
               router.push("/dashboard/notifications")
             }}
+            loading={notificationsLoading}
           />
         </div>
       )}
     </div>
   )
 }
-

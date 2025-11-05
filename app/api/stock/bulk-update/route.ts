@@ -17,7 +17,7 @@ const bulkUpdateStockSchema = z.object({
 // POST /api/stock/bulk-update - Bulk update stock levels
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const body = await request.json()
     const validatedData = bulkUpdateStockSchema.parse(body)

@@ -8,7 +8,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireRole(["SUPER_ADMIN", "ADMIN"])
+    const user = await requireRole(["SUPER_ADMIN", "ADMIN"], request)
 
     const order = await OrderService.approveOrder(params.id, user.id)
 

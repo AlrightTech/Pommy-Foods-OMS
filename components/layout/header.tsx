@@ -2,47 +2,19 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Search, User, Settings, LogOut, ChevronDown } from "lucide-react"
+import { Search, User, Settings, LogOut, ChevronDown, Edit, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { NotificationBell } from "@/components/notifications/notification-bell"
+import { ProfileDialog } from "@/components/profile/profile-dialog"
 import { useCurrentUser } from "@/hooks/use-user"
 import { useToast } from "@/hooks/use-toast"
-
-// Mock notifications - in production, fetch from API
-const mockNotifications = [
-  {
-    id: "1",
-    title: "New Order Approved",
-    message: "Order ORD-001 has been approved and is ready for kitchen preparation.",
-    type: "ORDER_APPROVED" as const,
-    isRead: false,
-    createdAt: new Date(Date.now() - 5 * 60000),
-    relatedId: "1",
-  },
-  {
-    id: "2",
-    title: "Delivery Assigned",
-    message: "You have been assigned to delivery DEL-001 to Convenience Store A.",
-    type: "DELIVERY_ASSIGNED" as const,
-    isRead: false,
-    createdAt: new Date(Date.now() - 30 * 60000),
-    relatedId: "1",
-  },
-  {
-    id: "3",
-    title: "Low Stock Alert",
-    message: "Pommy Meal - Beef is running low at Restaurant B (5 units remaining).",
-    type: "STOCK_LOW" as const,
-    isRead: true,
-    createdAt: new Date(Date.now() - 2 * 60 * 60000),
-  },
-]
 
 export function Header() {
   const router = useRouter()
   const { data: user, loading } = useCurrentUser()
   const toast = useToast()
   const [showMenu, setShowMenu] = useState(false)
+  const [showProfileDialog, setShowProfileDialog] = useState(false)
 
   const handleLogout = async () => {
     try {
@@ -87,7 +59,7 @@ export function Header() {
         {/* Right Section */}
         <div className="flex items-center gap-4">
           {/* Notifications */}
-          <NotificationBell notifications={mockNotifications} />
+          <NotificationBell />
 
           {/* User Profile */}
           <div className="relative flex items-center gap-3 pl-4 border-l border-gold/20">
@@ -128,8 +100,30 @@ export function Header() {
                     className="fixed inset-0 z-40"
                     onClick={() => setShowMenu(false)}
                   />
-                  <div className="absolute right-0 top-full mt-2 w-48 rounded-xl glass border border-gold/20 shadow-lg glow-gold-sm z-50 overflow-hidden">
-                    <div className="p-2">
+                  <div className="absolute right-0 top-full mt-2 w-56 rounded-xl glass border border-gold/20 shadow-lg glow-gold-sm z-50 overflow-hidden">
+                    <div className="p-2 space-y-1">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start gap-2 hover:bg-white/50"
+                        onClick={() => {
+                          setShowMenu(false)
+                          setShowProfileDialog(true)
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                        View Details
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start gap-2 hover:bg-white/50"
+                        onClick={() => {
+                          setShowMenu(false)
+                          router.push("/dashboard/settings")
+                        }}
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit Profile
+                      </Button>
                       <Button
                         variant="ghost"
                         className="w-full justify-start gap-2 hover:bg-white/50"
@@ -141,6 +135,7 @@ export function Header() {
                         <Settings className="w-4 h-4" />
                         Settings
                       </Button>
+                      <div className="h-px bg-gold/20 my-1" />
                       <Button
                         variant="ghost"
                         className="w-full justify-start gap-2 hover:bg-red-50/50 text-red-600 hover:text-red-700"
@@ -160,6 +155,12 @@ export function Header() {
           </div>
         </div>
       </div>
+
+      {/* Profile Dialog */}
+      <ProfileDialog 
+        open={showProfileDialog} 
+        onOpenChange={setShowProfileDialog} 
+      />
     </header>
   )
 }

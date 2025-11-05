@@ -18,7 +18,7 @@ const createProductSchema = z.object({
 // GET /api/products - List products
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth()
+    await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     const filters = {
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 // POST /api/products - Create product
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only admins can create products
     if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {

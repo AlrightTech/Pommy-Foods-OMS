@@ -19,7 +19,7 @@ const createReturnSchema = z.object({
 // POST /api/driver/returns - Create return (driver-specific endpoint)
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only drivers can create returns
     if (user.role !== "DRIVER") {

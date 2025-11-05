@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Check if user can access this store
     if (!canAccessStore(user, params.id)) {

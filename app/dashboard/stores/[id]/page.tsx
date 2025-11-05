@@ -1,13 +1,12 @@
 "use client"
 
-import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Edit, MapPin, Phone, Mail, DollarSign, Calendar } from "lucide-react"
+import { ArrowLeft, Edit, MapPin, Phone, Mail, DollarSign, Calendar, Loader2 } from "lucide-react"
 import { OrderStatusBadge } from "@/components/orders/order-status-badge"
 import {
   Table,
@@ -17,70 +16,56 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-
-// Mock data
-const mockStore = {
-  id: "1",
-  name: "Convenience Store A",
-  contactName: "John Doe",
-  email: "john@storea.com",
-  phone: "+1 234-567-8900",
-  address: "123 Main Street",
-  city: "New York",
-  region: "NYC",
-  creditLimit: 5000,
-  paymentTerms: 30,
-  isActive: true,
-  createdAt: new Date("2023-01-15"),
-}
-
-const mockOrders = [
-  {
-    id: "1",
-    orderNumber: "ORD-001",
-    status: "DELIVERED" as const,
-    totalAmount: 450.0,
-    createdAt: new Date("2024-01-15"),
-  },
-  {
-    id: "2",
-    orderNumber: "ORD-002",
-    status: "APPROVED" as const,
-    totalAmount: 320.0,
-    createdAt: new Date("2024-01-14"),
-  },
-]
-
-const mockInvoices = [
-  {
-    id: "1",
-    invoiceNumber: "INV-001",
-    status: "PAID" as const,
-    totalAmount: 450.0,
-    dueDate: new Date("2024-01-20"),
-    paidAt: new Date("2024-01-18"),
-  },
-]
-
-const mockStock = [
-  {
-    productName: "Pommy Meal - Chicken",
-    currentLevel: 25,
-    threshold: 20,
-    isLowStock: false,
-  },
-  {
-    productName: "Pommy Meal - Beef",
-    currentLevel: 5,
-    threshold: 20,
-    isLowStock: true,
-  },
-]
+import { useStore } from "@/hooks/use-stores"
+import { useApi } from "@/hooks/use-api"
+import { useToast } from "@/hooks/use-toast"
 
 export default function StoreDetailsPage() {
   const params = useParams()
   const router = useRouter()
-  const [store] = useState(mockStore)
+  const storeId = params.id as string
+  const { data: store, loading: storeLoading, refetch: refetchStore } = useStore(storeId)
+  
+  // Fetch store orders
+  const { data: orders, loading: ordersLoading } = useApi<any[]>(
+    `/api/stores/${storeId}/orders`
+  )
+  
+  // Fetch store invoices
+  const { data: invoices, loading: invoicesLoading } = useApi<any[]>(
+    `/api/invoices`,
+    { storeId }
+  )
+  
+  // Fetch store stock
+  const { data: stock, loading: stockLoading } = useApi<any[]>(
+    `/api/stores/${storeId}/stock`
+  )
+  
+  const toast = useToast()
+
+  if (storeLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-gold" />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!store) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-12">
+          <p className="text-foreground/60">Store not found</p>
+          <Button onClick={() => router.back()} className="mt-4">
+            Go Back
+          </Button>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   return (
     <DashboardLayout>
@@ -176,7 +161,7 @@ export default function StoreDetailsPage() {
                     <div>
                       <p className="text-sm text-foreground/60">Credit Limit</p>
                       <p className="text-2xl font-bold text-gradient-gold">
-                        ${store.creditLimit.toFixed(2)}
+                        ${(store.creditLimit || 0).toFixed(2)}
                       </p>
                     </div>
                     <DollarSign className="w-8 h-8 text-gold" />
@@ -185,7 +170,7 @@ export default function StoreDetailsPage() {
                   <div className="flex items-center justify-between p-4 rounded-xl glass border border-gold/20">
                     <div>
                       <p className="text-sm text-foreground/60">Payment Terms</p>
-                      <p className="text-2xl font-bold">{store.paymentTerms} days</p>
+                      <p className="text-2xl font-bold">{store.paymentTerms || 0} days</p>
                     </div>
                     <Calendar className="w-8 h-8 text-gold" />
                   </div>
@@ -193,7 +178,7 @@ export default function StoreDetailsPage() {
                   <div className="p-4 rounded-xl glass border border-gold/20">
                     <p className="text-sm text-foreground/60 mb-1">Created</p>
                     <p className="font-semibold">
-                      {store.createdAt.toLocaleDateString()}
+                      {new Date(store.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </CardContent>
@@ -209,32 +194,44 @@ export default function StoreDetailsPage() {
                 <CardDescription>All orders for this store</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Order Number</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockOrders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell className="font-medium">{order.orderNumber}</TableCell>
-                        <TableCell className="text-foreground/60">
-                          {order.createdAt.toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="font-semibold">
-                          ${order.totalAmount.toFixed(2)}
-                        </TableCell>
-                        <TableCell>
-                          <OrderStatusBadge status={order.status} />
-                        </TableCell>
+                {ordersLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-gold" />
+                  </div>
+                ) : orders && orders.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Order Number</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Status</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {orders.map((order: any) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="font-medium">
+                            {order.orderNumber || order.id}
+                          </TableCell>
+                          <TableCell className="text-foreground/60">
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="font-semibold">
+                            ${Number(order.totalAmount || 0).toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <OrderStatusBadge status={order.status} />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-12 text-foreground/60">
+                    <p>No orders found for this store</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -247,34 +244,46 @@ export default function StoreDetailsPage() {
                 <CardDescription>All invoices for this store</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Invoice Number</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Due Date</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockInvoices.map((invoice) => (
-                      <TableRow key={invoice.id}>
-                        <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                        <TableCell className="font-semibold">
-                          ${invoice.totalAmount.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-foreground/60">
-                          {invoice.dueDate.toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={invoice.status === "PAID" ? "success" : "default"}>
-                            {invoice.status}
-                          </Badge>
-                        </TableCell>
+                {invoicesLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-gold" />
+                  </div>
+                ) : invoices && invoices.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Invoice Number</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Due Date</TableHead>
+                        <TableHead>Status</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {invoices.map((invoice: any) => (
+                        <TableRow key={invoice.id}>
+                          <TableCell className="font-medium">
+                            {invoice.invoiceNumber || invoice.id}
+                          </TableCell>
+                          <TableCell className="font-semibold">
+                            ${Number(invoice.totalAmount || 0).toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-foreground/60">
+                            {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : "N/A"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={invoice.status === "PAID" ? "success" : "default"}>
+                              {invoice.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-12 text-foreground/60">
+                    <p>No invoices found for this store</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -287,30 +296,45 @@ export default function StoreDetailsPage() {
                 <CardDescription>Current stock levels for this store</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Current Level</TableHead>
-                      <TableHead>Threshold</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockStock.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{item.productName}</TableCell>
-                        <TableCell>{item.currentLevel}</TableCell>
-                        <TableCell>{item.threshold}</TableCell>
-                        <TableCell>
-                          <Badge variant={item.isLowStock ? "destructive" : "success"}>
-                            {item.isLowStock ? "Low Stock" : "OK"}
-                          </Badge>
-                        </TableCell>
+                {stockLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-gold" />
+                  </div>
+                ) : stock && stock.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Product</TableHead>
+                        <TableHead>Current Level</TableHead>
+                        <TableHead>Threshold</TableHead>
+                        <TableHead>Status</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {stock.map((item: any, index: number) => {
+                        const isLowStock = (item.currentLevel || 0) < (item.threshold || 0)
+                        return (
+                          <TableRow key={item.id || index}>
+                            <TableCell className="font-medium">
+                              {item.product?.name || "Unknown Product"}
+                            </TableCell>
+                            <TableCell>{item.currentLevel || 0}</TableCell>
+                            <TableCell>{item.threshold || 0}</TableCell>
+                            <TableCell>
+                              <Badge variant={isLowStock ? "destructive" : "success"}>
+                                {isLowStock ? "Low Stock" : "OK"}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-12 text-foreground/60">
+                    <p>No stock data found for this store</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -319,4 +343,3 @@ export default function StoreDetailsPage() {
     </DashboardLayout>
   )
 }
-

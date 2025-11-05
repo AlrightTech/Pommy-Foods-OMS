@@ -5,7 +5,7 @@ import { KitchenService } from "@/lib/services/kitchen.service"
 // POST /api/kitchen-sheets/auto-generate - Auto-generate kitchen sheets for approved orders
 export async function POST(request: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "ADMIN", "KITCHEN_STAFF"])
+    await requireRole(["SUPER_ADMIN", "ADMIN", "KITCHEN_STAFF"], request)
 
     const result = await KitchenService.autoGenerateKitchenSheets()
 

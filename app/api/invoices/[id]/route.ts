@@ -17,7 +17,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const invoice = await InvoiceService.getInvoiceById(params.id)
 
@@ -58,7 +58,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only admins can update invoices
     if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {

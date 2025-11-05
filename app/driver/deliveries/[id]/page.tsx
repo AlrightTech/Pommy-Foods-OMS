@@ -20,60 +20,94 @@ import {
   RotateCcw,
   DollarSign,
   Camera,
+  Loader2,
 } from "lucide-react"
+import { useDelivery, useStartDelivery, useCompleteDelivery } from "@/hooks/use-deliveries"
+import { useLogTemperature, useSubmitReturn, useRecordPayment } from "@/hooks/use-driver"
+import { useProducts } from "@/hooks/use-products"
+import { useToast } from "@/hooks/use-toast"
 import type { DeliveryStatus, PaymentMethod } from "@/types"
-
-// Mock delivery data
-const mockDelivery = {
-  id: "1",
-  orderNumber: "ORD-001",
-  storeName: "Convenience Store A",
-  address: "123 Main Street, New York, NY 10001",
-  scheduledDate: new Date("2024-01-16"),
-  status: "ASSIGNED" as DeliveryStatus,
-  items: [
-    { productName: "Pommy Meal - Chicken", quantity: 20 },
-    { productName: "Pommy Meal - Beef", quantity: 15 },
-  ],
-}
-
-const mockProducts = [
-  { id: "1", name: "Pommy Meal - Chicken", sku: "PM-CH-001" },
-  { id: "2", name: "Pommy Meal - Beef", sku: "PM-BF-001" },
-  { id: "3", name: "Pommy Meal - Vegetarian", sku: "PM-VEG-001" },
-]
 
 export default function DeliveryExecutionPage() {
   const params = useParams()
   const router = useRouter()
-  const [delivery, setDelivery] = useState(mockDelivery)
+  const deliveryId = params.id as string
+  const { data: delivery, loading: deliveryLoading, refetch: refetchDelivery } = useDelivery(deliveryId)
+  const { mutate: startDelivery, loading: startLoading } = useStartDelivery(deliveryId)
+  const { mutate: completeDelivery, loading: completeLoading } = useCompleteDelivery(deliveryId)
+  const { mutate: logTemperature, loading: tempLoading } = useLogTemperature()
+  const { mutate: submitReturn, loading: returnLoading } = useSubmitReturn()
+  const { mutate: recordPayment, loading: paymentLoading } = useRecordPayment()
+  const { data: products } = useProducts()
+  const toast = useToast()
+  
   const [signature, setSignature] = useState<string | null>(null)
   const [showSignatureCapture, setShowSignatureCapture] = useState(false)
   const [activeTab, setActiveTab] = useState("delivery")
 
-  const handleStartDelivery = () => {
-    setDelivery({ ...delivery, status: "IN_TRANSIT" })
-    // TODO: API call to start delivery
+  const handleStartDelivery = async () => {
+    try {
+      await startDelivery()
+      toast.success("Delivery started successfully")
+      refetchDelivery()
+    } catch (error: any) {
+      toast.error("Failed to start delivery", error?.message || "Please try again")
+    }
   }
 
-  const handleCompleteDelivery = () => {
+  const handleCompleteDelivery = async () => {
     if (!signature) {
-      alert("Please capture customer signature first")
+      toast.error("Signature Required", "Please capture customer signature first")
       return
     }
-    setDelivery({ ...delivery, status: "DELIVERED" })
-    // TODO: API call to complete delivery
-    router.push("/driver/deliveries")
+    
+    try {
+      await completeDelivery({
+        signature,
+        notes: "",
+      })
+      toast.success("Delivery completed successfully")
+      router.push("/driver/deliveries")
+    } catch (error: any) {
+      toast.error("Failed to complete delivery", error?.message || "Please try again")
+    }
   }
 
   const handleTemperatureLog = async (temp: number, location: string, notes?: string) => {
-    // TODO: API call to log temperature
-    console.log("Temperature logged:", { temp, location, notes })
+    if (!delivery) return
+    
+    try {
+      await logTemperature({
+        deliveryId: delivery.id,
+        temperature: temp,
+        location,
+        notes,
+      })
+      toast.success("Temperature logged successfully")
+    } catch (error: any) {
+      toast.error("Failed to log temperature", error?.message || "Please try again")
+    }
   }
 
   const handleReturnSubmit = async (items: any[]) => {
-    // TODO: API call to submit returns
-    console.log("Returns submitted:", items)
+    if (!delivery) return
+    
+    try {
+      await submitReturn({
+        deliveryId: delivery.id,
+        items: items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          expiryDate: item.expiryDate || new Date().toISOString(),
+          reason: item.reason || "expired",
+        })),
+        notes: "",
+      })
+      toast.success("Returns submitted successfully")
+      refetchDelivery()
+    } catch (error: any) {
+      toast.error("Failed to submit returns", error?.message || "Please try again")
+    }
   }
 
   const handlePayment = async (payment: {
@@ -82,13 +116,71 @@ export default function DeliveryExecutionPage() {
     receiptUrl?: string
     notes?: string
   }) => {
-    // TODO: API call to record payment
-    console.log("Payment recorded:", payment)
+    if (!delivery) return
+    
+    // Get invoice ID from delivery's order
+    const invoiceId = delivery.order?.invoiceId || ""
+    
+    if (!invoiceId) {
+      toast.error("Invoice Not Found", "No invoice found for this delivery")
+      return
+    }
+    
+    try {
+      await recordPayment({
+        invoiceId,
+        deliveryId: delivery.id,
+        amount: payment.amount,
+        receiptUrl: payment.receiptUrl,
+        notes: payment.notes,
+      })
+      toast.success("Payment recorded successfully")
+      refetchDelivery()
+    } catch (error: any) {
+      toast.error("Failed to record payment", error?.message || "Please try again")
+    }
   }
 
   const handlePhotoUpload = () => {
     // TODO: Implement photo upload
-    alert("Photo upload functionality will be implemented")
+    toast.info("Photo upload functionality will be implemented soon")
+  }
+
+  // Format delivery items
+  const deliveryItems = delivery?.order?.items?.map((item: any) => ({
+    productName: item.product?.name || "Unknown Product",
+    quantity: item.quantity || 0,
+  })) || []
+
+  // Calculate invoice amount (from order totalAmount)
+  const invoiceAmount = delivery?.order?.totalAmount || 0
+
+  // Get products for return entry
+  const productsForReturn = products || []
+
+  const isLoading = deliveryLoading || startLoading || completeLoading || tempLoading || returnLoading || paymentLoading
+
+  if (deliveryLoading) {
+    return (
+      <DriverLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-gold" />
+        </div>
+      </DriverLayout>
+    )
+  }
+
+  if (!delivery) {
+    return (
+      <DriverLayout>
+        <div className="text-center py-12">
+          <p className="text-foreground/60">Delivery not found</p>
+          <Button onClick={() => router.back()} className="mt-4">
+            Go Back
+          </Button>
+        </div>
+      </DriverLayout>
+    )
   }
 
   return (
@@ -97,8 +189,10 @@ export default function DeliveryExecutionPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gradient-gold">{delivery.orderNumber}</h1>
-            <p className="text-foreground/60">{delivery.storeName}</p>
+            <h1 className="text-2xl font-bold text-gradient-gold">
+              {delivery.order?.orderNumber || delivery.id}
+            </h1>
+            <p className="text-foreground/60">{delivery.store?.name || "Unknown Store"}</p>
           </div>
           <Badge
             variant={
@@ -130,14 +224,14 @@ export default function DeliveryExecutionPage() {
                   <MapPin className="h-5 w-5 text-gold" />
                   <div>
                     <p className="text-sm text-foreground/60">Delivery Address</p>
-                    <p className="font-semibold">{delivery.address}</p>
+                    <p className="font-semibold">{delivery.deliveryAddress}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Package className="h-5 w-5 text-gold" />
                   <div>
                     <p className="text-sm text-foreground/60">Items</p>
-                    <p className="font-semibold">{delivery.items.length} products</p>
+                    <p className="font-semibold">{deliveryItems.length} products</p>
                   </div>
                 </div>
               </CardContent>
@@ -146,9 +240,9 @@ export default function DeliveryExecutionPage() {
             {/* GPS Tracker */}
             <GPSTracker
               destination={{
-                address: delivery.address,
-                latitude: 40.7128,
-                longitude: -74.0060,
+                address: delivery.deliveryAddress,
+                latitude: delivery.store?.latitude || 0,
+                longitude: delivery.store?.longitude || 0,
               }}
             />
 
@@ -159,30 +253,48 @@ export default function DeliveryExecutionPage() {
             <Card>
               <CardContent className="p-4">
                 <h3 className="font-semibold mb-3">Delivery Items</h3>
-                <div className="space-y-2">
-                  {delivery.items.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 rounded-xl glass border border-gold/20"
-                    >
-                      <div>
-                        <p className="font-medium">{item.productName}</p>
-                        <p className="text-sm text-foreground/60">
-                          Quantity: {item.quantity}
-                        </p>
+                {deliveryItems.length === 0 ? (
+                  <div className="text-center py-8 text-foreground/60">
+                    <p>No items found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {deliveryItems.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 rounded-xl glass border border-gold/20"
+                      >
+                        <div>
+                          <p className="font-medium">{item.productName}</p>
+                          <p className="text-sm text-foreground/60">
+                            Quantity: {item.quantity}
+                          </p>
+                        </div>
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
                       </div>
-                      <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             {/* Actions */}
             <div className="space-y-3">
               {delivery.status === "ASSIGNED" && (
-                <Button onClick={handleStartDelivery} className="w-full glow-gold-sm" size="lg">
-                  Start Delivery
+                <Button 
+                  onClick={handleStartDelivery} 
+                  className="w-full glow-gold-sm" 
+                  size="lg"
+                  disabled={isLoading}
+                >
+                  {startLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Starting...
+                    </>
+                  ) : (
+                    "Start Delivery"
+                  )}
                 </Button>
               )}
 
@@ -193,6 +305,7 @@ export default function DeliveryExecutionPage() {
                     variant="outline"
                     className="w-full"
                     size="lg"
+                    disabled={isLoading}
                   >
                     Capture Signature
                   </Button>
@@ -201,18 +314,28 @@ export default function DeliveryExecutionPage() {
                     variant="outline"
                     className="w-full"
                     size="lg"
+                    disabled={isLoading}
                   >
                     <Camera className="mr-2 h-5 w-5" />
                     Upload Photo
                   </Button>
                   <Button
                     onClick={handleCompleteDelivery}
-                    disabled={!signature}
+                    disabled={!signature || isLoading}
                     className="w-full glow-gold-sm"
                     size="lg"
                   >
-                    <CheckCircle2 className="mr-2 h-5 w-5" />
-                    Complete Delivery
+                    {completeLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Completing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="mr-2 h-5 w-5" />
+                        Complete Delivery
+                      </>
+                    )}
                   </Button>
                 </>
               )}
@@ -236,13 +359,13 @@ export default function DeliveryExecutionPage() {
 
           {/* Returns Tab */}
           <TabsContent value="returns" className="mt-4">
-            <ReturnEntry products={mockProducts} onSubmit={handleReturnSubmit} />
+            <ReturnEntry products={productsForReturn} onSubmit={handleReturnSubmit} />
           </TabsContent>
 
           {/* Payment Tab */}
           <TabsContent value="payment" className="mt-4">
             <PaymentCollector
-              invoiceAmount={450.0}
+              invoiceAmount={Number(invoiceAmount)}
               onPayment={handlePayment}
             />
           </TabsContent>
@@ -251,4 +374,3 @@ export default function DeliveryExecutionPage() {
     </DriverLayout>
   )
 }
-

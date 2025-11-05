@@ -18,10 +18,10 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only admins can modify order items
-    await requireRole(["SUPER_ADMIN", "ADMIN"])
+    await requireRole(["SUPER_ADMIN", "ADMIN"], request)
 
     const order = await OrderService.getOrderById(params.id)
 

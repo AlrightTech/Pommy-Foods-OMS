@@ -3,54 +3,51 @@
 import { StoreLayout } from "@/components/layout/store-layout"
 import { StockTable } from "@/components/stock/stock-table"
 import { Card } from "@/components/ui/card"
-
-// Mock data - store-specific stock
-const mockStockItems = [
-  {
-    id: "1",
-    productId: "1",
-    productName: "Pommy Meal - Chicken",
-    productSku: "PM-CH-001",
-    currentLevel: 25,
-    threshold: 20,
-    lastUpdated: new Date(),
-    isLowStock: false,
-  },
-  {
-    id: "2",
-    productId: "2",
-    productName: "Pommy Meal - Beef",
-    productSku: "PM-BF-001",
-    currentLevel: 5,
-    threshold: 20,
-    lastUpdated: new Date(),
-    isLowStock: true,
-  },
-  {
-    id: "3",
-    productId: "3",
-    productName: "Pommy Meal - Vegetarian",
-    productSku: "PM-VEG-001",
-    currentLevel: 30,
-    threshold: 15,
-    lastUpdated: new Date(),
-    isLowStock: false,
-  },
-]
+import { Loader2 } from "lucide-react"
+import { useStock } from "@/hooks/use-stock"
+import { useApiMutation } from "@/hooks/use-api"
+import { useCurrentUser } from "@/hooks/use-user"
+import { useToast } from "@/hooks/use-toast"
 
 export default function StoreStockPage() {
-  const [stockItems, setStockItems] = useState(mockStockItems)
+  const { data: user } = useCurrentUser()
+  const { data: stockItems, loading: stockLoading, refetch: refetchStock } = useStock(
+    user?.storeId ? { storeId: user.storeId } : undefined
+  )
+  const toast = useToast()
 
-  const handleUpdate = async (itemId: string, newLevel: number) => {
-    // TODO: API call to update stock
-    setStockItems(
-      stockItems.map((item) =>
-        item.id === itemId
-          ? { ...item, currentLevel: newLevel, isLowStock: newLevel <= item.threshold }
-          : item
-      )
-    )
+  const handleUpdate = async (itemId: string, newLevel: number, currentItem?: any) => {
+    try {
+      const response = await fetch(`/api/stock/${itemId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ currentLevel: newLevel }),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error?.error || "Failed to update stock")
+      }
+      
+      toast.success("Stock updated successfully")
+      refetchStock()
+    } catch (error: any) {
+      toast.error("Failed to update stock", error?.message || "Please try again")
+    }
   }
+
+  // Format stock items for the table
+  const formattedStockItems = stockItems?.map((item: any) => ({
+    id: item.id,
+    productId: item.productId,
+    productName: item.product?.name || "Unknown Product",
+    productSku: item.product?.sku || "N/A",
+    currentLevel: item.currentLevel || 0,
+    threshold: item.threshold || 0,
+    lastUpdated: item.lastUpdated ? new Date(item.lastUpdated) : new Date(),
+    isLowStock: item.isLowStock || (item.currentLevel || 0) < (item.threshold || 0),
+  })) || []
 
   return (
     <StoreLayout>
@@ -62,16 +59,27 @@ export default function StoreStockPage() {
         </div>
 
         {/* Stock Table */}
-        <Card>
-          <StockTable
-            stockItems={stockItems}
-            onUpdate={handleUpdate}
-          />
-        </Card>
+        {stockLoading ? (
+          <Card>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-gold" />
+            </div>
+          </Card>
+        ) : formattedStockItems.length === 0 ? (
+          <Card>
+            <div className="text-center py-12 text-foreground/60">
+              <p>No stock items found</p>
+            </div>
+          </Card>
+        ) : (
+          <Card>
+            <StockTable
+              stockItems={formattedStockItems}
+              onUpdate={handleUpdate}
+            />
+          </Card>
+        )}
       </div>
     </StoreLayout>
   )
 }
-
-import { useState } from "react"
-

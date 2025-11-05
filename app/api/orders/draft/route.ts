@@ -5,7 +5,7 @@ import { OrderService } from "@/lib/services/order.service"
 // GET /api/orders/draft - Get draft orders (auto-generated)
 export async function GET(request: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "ADMIN"])
+    await requireRole(["SUPER_ADMIN", "ADMIN"], request)
 
     const { searchParams } = new URL(request.url)
     const storeId = searchParams.get("storeId") || undefined

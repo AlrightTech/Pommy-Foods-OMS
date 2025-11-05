@@ -76,9 +76,25 @@ export default function InvoiceDetailsPage() {
     alert(`Payment of $${payment.amount} recorded successfully!`)
   }
 
-  const handleDownload = () => {
-    // TODO: Generate and download PDF
-    alert(`Downloading invoice ${invoice.invoiceNumber}`)
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(`/api/invoices/${invoice.id}/download`, {
+        credentials: "include",
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        // Generate PDF from data using jsPDF
+        const { downloadInvoicePDF } = await import("@/lib/utils/pdf-generator")
+        downloadInvoicePDF(data)
+        toast.success("Invoice PDF downloaded successfully")
+      } else {
+        const error = await response.json()
+        toast.error("Failed to download invoice", error?.error || "Please try again")
+      }
+    } catch (error: any) {
+      toast.error("Failed to download invoice", error?.message || "Please try again")
+    }
   }
 
   return (

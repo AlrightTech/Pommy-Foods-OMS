@@ -5,7 +5,7 @@ import { generateInvoicesForDeliveredOrders } from "@/lib/jobs/invoice-generatio
 // POST /api/jobs/invoice-generation - Trigger invoice generation manually
 export async function POST(request: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "ADMIN"])
+    await requireRole(["SUPER_ADMIN", "ADMIN"], request)
 
     const result = await generateInvoicesForDeliveredOrders()
 

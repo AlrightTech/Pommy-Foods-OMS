@@ -16,7 +16,7 @@ const createPaymentSchema = z.object({
 // GET /api/payments - List payments
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth()
+    await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     const filters = {
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 // POST /api/payments - Create payment
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const body = await request.json()
     const validatedData = createPaymentSchema.parse(body)

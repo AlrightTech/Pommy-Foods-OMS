@@ -5,7 +5,7 @@ import { NotificationService } from "@/lib/services/notification.service"
 // GET /api/notifications - List notifications for current user
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     

@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAuth()
+    await requireAuth(request)
 
     const sheet = await KitchenService.getKitchenSheetById(params.id)
 

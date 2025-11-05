@@ -5,7 +5,7 @@ import { DeliveryService } from "@/lib/services/delivery.service"
 // GET /api/driver/deliveries - Get deliveries for current driver
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only drivers can access this endpoint
     if (user.role !== "DRIVER") {

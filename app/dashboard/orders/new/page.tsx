@@ -9,14 +9,11 @@ import { Button } from "@/components/ui/button"
 import { Select } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Save } from "lucide-react"
-
-// Mock stores
-const mockStores = [
-  { id: "1", name: "Convenience Store A" },
-  { id: "2", name: "Restaurant B" },
-  { id: "3", name: "Convenience Store C" },
-]
+import { ArrowLeft, Save, Loader2 } from "lucide-react"
+import { useStores } from "@/hooks/use-stores"
+import { useCreateOrder } from "@/hooks/use-orders"
+import { useToast } from "@/hooks/use-toast"
+import type { OrderType } from "@/types"
 
 interface OrderItem {
   id?: string
@@ -30,10 +27,15 @@ interface OrderItem {
 
 export default function NewOrderPage() {
   const router = useRouter()
+  const { data: stores, loading: storesLoading } = useStores()
+  const { mutate: createOrder, loading: createLoading } = useCreateOrder()
+  const toast = useToast()
+  
   const [storeId, setStoreId] = useState("")
+  const [orderType, setOrderType] = useState<OrderType>("MANUAL")
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [notes, setNotes] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const isLoading = createLoading
 
   const handleItemsChange = (items: OrderItem[]) => {
     setOrderItems(items)
@@ -41,26 +43,29 @@ export default function NewOrderPage() {
 
   const handleSubmit = async () => {
     if (!storeId) {
-      alert("Please select a store")
+      toast.error("Store Required", "Please select a store")
       return
     }
 
     if (orderItems.length === 0) {
-      alert("Please add at least one item to the order")
+      toast.error("Items Required", "Please add at least one item to the order")
       return
     }
 
-    setIsLoading(true)
     try {
-      // TODO: API call to create order
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      alert("Order created successfully!")
+      await createOrder({
+        storeId,
+        orderType,
+        items: orderItems.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
+        notes: notes || undefined,
+      })
+      toast.success("Order created successfully!")
       router.push("/dashboard/orders")
-    } catch (error) {
-      console.error("Error creating order:", error)
-      alert("Failed to create order")
-    } finally {
-      setIsLoading(false)
+    } catch (error: any) {
+      toast.error("Failed to create order", error?.message || "Please try again")
     }
   }
 
@@ -95,17 +100,35 @@ export default function NewOrderPage() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="store">Store *</Label>
+                    {storesLoading ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-gold" />
+                        <span className="text-sm text-foreground/60">Loading stores...</span>
+                      </div>
+                    ) : (
+                      <Select
+                        id="store"
+                        value={storeId}
+                        onChange={(e) => setStoreId(e.target.value)}
+                      >
+                        <option value="">Select a store</option>
+                        {stores?.map((store: any) => (
+                          <option key={store.id} value={store.id}>
+                            {store.name}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="orderType">Order Type *</Label>
                     <Select
-                      id="store"
-                      value={storeId}
-                      onChange={(e) => setStoreId(e.target.value)}
+                      id="orderType"
+                      value={orderType}
+                      onChange={(e) => setOrderType(e.target.value as OrderType)}
                     >
-                      <option value="">Select a store</option>
-                      {mockStores.map((store) => (
-                        <option key={store.id} value={store.id}>
-                          {store.name}
-                        </option>
-                      ))}
+                      <option value="MANUAL">Manual Order</option>
+                      <option value="AUTO_REPLENISH">Auto Replenishment</option>
                     </Select>
                   </div>
                 </div>
@@ -157,8 +180,14 @@ export default function NewOrderPage() {
                     <span className="text-foreground/60">Store:</span>
                     <span className="font-medium">
                       {storeId
-                        ? mockStores.find((s) => s.id === storeId)?.name || "Not selected"
+                        ? stores?.find((s: any) => s.id === storeId)?.name || "Not selected"
                         : "Not selected"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-foreground/60">Order Type:</span>
+                    <span className="font-medium">
+                      {orderType === "MANUAL" ? "Manual" : "Auto Replenishment"}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -184,8 +213,17 @@ export default function NewOrderPage() {
                   className="w-full glow-gold-sm"
                   size="lg"
                 >
-                  <Save className="mr-2 h-4 w-4" />
-                  {isLoading ? "Creating Order..." : "Create Order"}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating Order...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Create Order
+                    </>
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -195,4 +233,3 @@ export default function NewOrderPage() {
     </DashboardLayout>
   )
 }
-

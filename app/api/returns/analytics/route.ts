@@ -5,7 +5,7 @@ import { ReturnService } from "@/lib/services/return.service"
 // GET /api/returns/analytics - Get wastage analytics
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth()
+    await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     const filters = {

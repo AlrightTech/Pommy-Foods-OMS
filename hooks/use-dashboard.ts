@@ -50,11 +50,32 @@ export function useDashboardStats() {
   // Fetch active stores
   const { data: stores, loading: storesLoading } = useStores({ isActive: true })
 
-  // Fetch sales analytics for revenue calculation
+  // Fetch sales analytics for revenue calculation (today)
   const { data: salesData } = useSalesAnalytics({
     startDate: today.toISOString(),
     endDate: new Date().toISOString(),
   })
+
+  // Fetch previous period data for comparison (yesterday for revenue)
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+  yesterday.setHours(0, 0, 0, 0)
+  const yesterdayEnd = new Date(yesterday)
+  yesterdayEnd.setHours(23, 59, 59, 999)
+
+  const { data: yesterdayOrders } = useOrders({
+    startDate: yesterday.toISOString(),
+    endDate: yesterdayEnd.toISOString(),
+  })
+
+  const { data: yesterdaySalesData } = useSalesAnalytics({
+    startDate: yesterday.toISOString(),
+    endDate: yesterdayEnd.toISOString(),
+  })
+
+  // Fetch previous period products/stores (for comparison)
+  const { data: previousProducts } = useProducts({ isActive: true })
+  const { data: previousStores } = useStores({ isActive: true })
 
   const stats = useMemo<DashboardStats>(() => {
     const pendingOrdersCount = orders?.filter(
@@ -64,23 +85,46 @@ export function useDashboardStats() {
     // Calculate today's revenue from orders or sales data
     let todayRevenue = 0
     if (salesData?.totalRevenue) {
-      todayRevenue = salesData.totalRevenue
+      todayRevenue = Number(salesData.totalRevenue)
     } else if (todayOrders) {
       todayRevenue = todayOrders.reduce((sum, order) => {
         return sum + Number(order.totalAmount || 0)
       }, 0)
     }
 
+    // Calculate yesterday's revenue for comparison
+    let yesterdayRevenue = 0
+    if (yesterdaySalesData?.totalRevenue) {
+      yesterdayRevenue = Number(yesterdaySalesData.totalRevenue)
+    } else if (yesterdayOrders) {
+      yesterdayRevenue = yesterdayOrders.reduce((sum, order) => {
+        return sum + Number(order.totalAmount || 0)
+      }, 0)
+    }
+
+    // Calculate revenue change percentage
+    let todayRevenueChange: string | undefined
+    if (yesterdayRevenue > 0) {
+      const change = ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100
+      todayRevenueChange = `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`
+    } else if (todayRevenue > 0) {
+      todayRevenueChange = "+100%"
+    }
+
     const activeProductsCount = products?.length || 0
     const activeStoresCount = stores?.length || 0
+
+    // Note: Products and stores changes would require historical data tracking
+    // For now, we'll leave them as null since they don't change frequently
 
     return {
       pendingOrders: pendingOrdersCount,
       todayRevenue,
+      todayRevenueChange,
       activeProducts: activeProductsCount,
       activeStores: activeStoresCount,
     }
-  }, [orders, todayOrders, products, stores, salesData])
+  }, [orders, todayOrders, products, stores, salesData, yesterdayOrders, yesterdaySalesData])
 
   return {
     stats,

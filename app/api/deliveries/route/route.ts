@@ -17,7 +17,7 @@ const optimizeRouteSchema = z.object({
 // POST /api/deliveries/route - Optimize delivery route
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const body = await request.json()
     const validatedData = optimizeRouteSchema.parse(body)

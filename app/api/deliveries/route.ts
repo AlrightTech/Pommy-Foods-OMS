@@ -5,7 +5,7 @@ import { DeliveryService } from "@/lib/services/delivery.service"
 // GET /api/deliveries - List deliveries
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 // POST /api/deliveries - Generate delivery from order
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only admins can manually generate deliveries
     if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {

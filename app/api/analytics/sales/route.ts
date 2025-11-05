@@ -5,7 +5,7 @@ import { AnalyticsService } from "@/lib/services/analytics.service"
 // GET /api/analytics/sales - Get sales reports
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     

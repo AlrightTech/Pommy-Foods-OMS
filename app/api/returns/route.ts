@@ -19,7 +19,7 @@ const createReturnSchema = z.object({
 // GET /api/returns - List returns
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
 // POST /api/returns - Create return
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only drivers can create returns
     if (user.role !== "DRIVER") {

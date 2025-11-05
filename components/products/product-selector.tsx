@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, X } from "lucide-react"
+import { Search, Loader2 } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useProducts } from "@/hooks/use-products"
 
 interface Product {
   id: string
@@ -26,21 +27,24 @@ interface ProductSelectorProps {
   onClose: () => void
 }
 
-// Mock products - will be replaced with API call
-const mockProducts: Product[] = [
-  { id: "1", name: "Pommy Meal - Chicken", sku: "PM-CH-001", price: 12.99 },
-  { id: "2", name: "Pommy Meal - Beef", sku: "PM-BF-001", price: 14.99 },
-  { id: "3", name: "Pommy Meal - Vegetarian", sku: "PM-VEG-001", price: 11.99 },
-]
-
 export function ProductSelector({ onSelect, onClose }: ProductSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("")
+  const { data: products, loading: productsLoading } = useProducts()
 
-  const filteredProducts = mockProducts.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredProducts = useMemo(() => {
+    if (!products) return []
+    
+    return products.filter(
+      (product: any) =>
+        product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+    ).map((product: any) => ({
+      id: product.id,
+      name: product.name || "Unknown Product",
+      sku: product.sku || "N/A",
+      price: Number(product.price || 0),
+    }))
+  }, [products, searchTerm])
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -60,47 +64,52 @@ export function ProductSelector({ onSelect, onClose }: ProductSelectorProps) {
             />
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product Name</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.length === 0 ? (
+          {productsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-gold" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-foreground/60">
-                    No products found
-                  </TableCell>
+                  <TableHead>Product Name</TableHead>
+                  <TableHead>SKU</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
-              ) : (
-                filteredProducts.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell className="text-foreground/60">{product.sku}</TableCell>
-                    <TableCell>${product.price.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        onClick={() => {
-                          onSelect(product)
-                          onClose()
-                        }}
-                        size="sm"
-                      >
-                        Add
-                      </Button>
+              </TableHeader>
+              <TableBody>
+                {filteredProducts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-foreground/60">
+                      No products found
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  filteredProducts.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="font-medium">{product.name}</TableCell>
+                      <TableCell className="text-foreground/60">{product.sku}</TableCell>
+                      <TableCell>${product.price.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          onClick={() => {
+                            onSelect(product)
+                            onClose()
+                          }}
+                          size="sm"
+                        >
+                          Add
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </DialogContent>
     </Dialog>
   )
 }
-

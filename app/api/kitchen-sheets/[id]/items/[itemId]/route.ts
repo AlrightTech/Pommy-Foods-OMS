@@ -17,7 +17,7 @@ export async function PUT(
   { params }: { params: { id: string; itemId: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only kitchen staff or admins can update items
     if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN" && user.role !== "KITCHEN_STAFF") {

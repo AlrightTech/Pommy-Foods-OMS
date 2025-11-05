@@ -5,37 +5,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Download, Eye } from "lucide-react"
+import { Download, Eye, Loader2 } from "lucide-react"
 import Link from "next/link"
-import type { InvoiceStatus } from "@/types"
-
-// Mock invoices
-const mockInvoices = [
-  {
-    id: "1",
-    invoiceNumber: "INV-001",
-    orderNumber: "ORD-001",
-    totalAmount: 450.0,
-    status: "PENDING" as InvoiceStatus,
-    dueDate: new Date("2024-01-25"),
-    issuedAt: new Date("2024-01-15"),
-  },
-  {
-    id: "2",
-    invoiceNumber: "INV-002",
-    orderNumber: "ORD-002",
-    totalAmount: 320.0,
-    status: "PAID" as InvoiceStatus,
-    dueDate: new Date("2024-01-20"),
-    issuedAt: new Date("2024-01-10"),
-    paidAt: new Date("2024-01-18"),
-  },
-]
+import { useInvoices } from "@/hooks/use-invoices"
+import { useCurrentUser } from "@/hooks/use-user"
+import { useToast } from "@/hooks/use-toast"
+import { format } from "date-fns"
 
 export default function StoreInvoicesPage() {
-  const handleDownload = (invoiceId: string) => {
-    // TODO: Download invoice PDF
-    alert(`Downloading invoice ${invoiceId}`)
+  const { data: user } = useCurrentUser()
+  const { data: invoices, loading: invoicesLoading } = useInvoices(
+    user?.storeId ? { storeId: user.storeId } : undefined
+  )
+  const toast = useToast()
+
+  const handleDownload = async (invoiceId: string) => {
+    try {
+      const response = await fetch(`/api/invoices/${invoiceId}/download`, {
+        credentials: "include",
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        // Generate PDF from data using jsPDF
+        const { downloadInvoicePDF } = await import("@/lib/utils/pdf-generator")
+        downloadInvoicePDF(data)
+        toast.success("Invoice PDF downloaded successfully")
+      } else {
+        const error = await response.json()
+        toast.error("Failed to download invoice", error?.error || "Please try again")
+      }
+    } catch (error: any) {
+      toast.error("Failed to download invoice", error?.message || "Please try again")
+    }
   }
 
   return (
@@ -54,66 +56,79 @@ export default function StoreInvoicesPage() {
             <CardDescription>All invoices for this store</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice Number</TableHead>
-                  <TableHead>Order Number</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockInvoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                    <TableCell className="text-foreground/60">{invoice.orderNumber}</TableCell>
-                    <TableCell className="font-semibold">
-                      ${invoice.totalAmount.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-foreground/60">
-                      {invoice.dueDate.toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          invoice.status === "PAID"
-                            ? "success"
-                            : invoice.status === "OVERDUE"
-                            ? "destructive"
-                            : "default"
-                        }
-                      >
-                        {invoice.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link href={`/store/invoices/${invoice.id}`}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDownload(invoice.id)}
-                          className="h-8 w-8"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            {invoicesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-gold" />
+              </div>
+            ) : invoices && invoices.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Invoice Number</TableHead>
+                    <TableHead>Order Number</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {invoices.map((invoice: any) => (
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-medium">
+                        {invoice.invoiceNumber || invoice.id}
+                      </TableCell>
+                      <TableCell className="text-foreground/60">
+                        {invoice.order?.orderNumber || invoice.orderId || "N/A"}
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        ${Number(invoice.totalAmount || 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-foreground/60">
+                        {invoice.dueDate ? format(new Date(invoice.dueDate), "PPP") : "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            invoice.status === "PAID"
+                              ? "success"
+                              : invoice.status === "OVERDUE"
+                              ? "destructive"
+                              : "default"
+                          }
+                        >
+                          {invoice.status || "PENDING"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/store/invoices/${invoice.id}`}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDownload(invoice.id)}
+                            className="h-8 w-8"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-12 text-foreground/60">
+                <p>No invoices found</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
     </StoreLayout>
   )
 }
-

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Check, QrCode } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { BarcodeGenerator } from "@/components/kitchen/barcode-generator"
 
 interface KitchenItem {
   id: string
@@ -142,29 +142,17 @@ export function KitchenItemCard({ item, onUpdate, readonly = false }: KitchenIte
         )}
       </CardContent>
 
-      {showBarcode && (
-        <Dialog open={showBarcode} onOpenChange={setShowBarcode}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Barcode & QR Code</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="text-center p-4 rounded-xl glass border border-gold/20">
-                <p className="text-sm text-foreground/60 mb-2">Barcode</p>
-                <p className="font-mono text-lg">{item.barcode}</p>
-              </div>
-              <div className="text-center p-4 rounded-xl glass border border-gold/20">
-                <p className="text-sm text-foreground/60 mb-2">QR Code</p>
-                <p className="font-mono text-sm break-all">{item.qrCode}</p>
-                {/* In production, you would render an actual QR code image here */}
-                <div className="mt-2 p-4 bg-white rounded">
-                  <p className="text-xs text-foreground/40">QR Code Image Placeholder</p>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+      <BarcodeGenerator
+        itemId={item.id}
+        barcode={item.barcode || ""}
+        qrCode={item.qrCode || item.barcode || ""}
+        productName={item.productName}
+        productSku={item.productSku}
+        batchNumber={item.batchNumber}
+        expiryDate={item.expiryDate}
+        open={showBarcode}
+        onClose={() => setShowBarcode(false)}
+      />
     </Card>
   )
 }

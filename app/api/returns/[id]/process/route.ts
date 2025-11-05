@@ -8,7 +8,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireRole(["SUPER_ADMIN", "ADMIN"])
+    await requireRole(["SUPER_ADMIN", "ADMIN"], request)
 
     const returnRecord = await ReturnService.processReturn(params.id)
 

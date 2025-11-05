@@ -18,7 +18,7 @@ const createOrderSchema = z.object({
 // GET /api/orders - List orders
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 // POST /api/orders - Create order
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const body = await request.json()
     const validatedData = createOrderSchema.parse(body)

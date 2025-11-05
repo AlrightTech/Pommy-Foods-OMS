@@ -20,7 +20,7 @@ const createStoreSchema = z.object({
 // GET /api/stores - List stores
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth()
+    await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     const filters = {
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 // POST /api/stores - Create store
 export async function POST(request: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "ADMIN"])
+    await requireRole(["SUPER_ADMIN", "ADMIN"], request)
 
     const body = await request.json()
     const validatedData = createStoreSchema.parse(body)

@@ -5,36 +5,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { OrderStatusBadge } from "@/components/orders/order-status-badge"
 import { Button } from "@/components/ui/button"
-import { Eye } from "lucide-react"
+import { Eye, Loader2 } from "lucide-react"
 import Link from "next/link"
-import type { OrderStatus } from "@/types"
-
-// Mock orders
-const mockOrders = [
-  {
-    id: "ORD-001",
-    orderNumber: "ORD-001",
-    status: "PENDING" as OrderStatus,
-    totalAmount: 450.0,
-    createdAt: new Date("2024-01-15"),
-  },
-  {
-    id: "ORD-002",
-    orderNumber: "ORD-002",
-    status: "APPROVED" as OrderStatus,
-    totalAmount: 320.0,
-    createdAt: new Date("2024-01-14"),
-  },
-  {
-    id: "ORD-003",
-    orderNumber: "ORD-003",
-    status: "DELIVERED" as OrderStatus,
-    totalAmount: 890.0,
-    createdAt: new Date("2024-01-10"),
-  },
-]
+import { useOrders } from "@/hooks/use-orders"
+import { useCurrentUser } from "@/hooks/use-user"
+import { format } from "date-fns"
 
 export default function StoreOrdersPage() {
+  const { data: user } = useCurrentUser()
+  
+  // Fetch store's orders
+  const { data: orders, loading: ordersLoading } = useOrders(
+    user?.storeId ? { storeId: user.storeId } : undefined
+  )
+
   return (
     <StoreLayout>
       <div className="space-y-8 animate-fade-in">
@@ -51,44 +35,55 @@ export default function StoreOrdersPage() {
             <CardDescription>All your orders from this store</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order Number</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.orderNumber}</TableCell>
-                    <TableCell className="text-foreground/60">
-                      {order.createdAt.toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      ${order.totalAmount.toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <OrderStatusBadge status={order.status} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Link href={`/store/orders/${order.id}`}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </TableCell>
+            {ordersLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-gold" />
+              </div>
+            ) : orders && orders.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order Number</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order: any) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">
+                        {order.orderNumber || order.id}
+                      </TableCell>
+                      <TableCell className="text-foreground/60">
+                        {order.createdAt ? format(new Date(order.createdAt), "PPP") : "N/A"}
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        ${Number(order.totalAmount || 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <OrderStatusBadge status={order.status} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Link href={`/store/orders/${order.id}`}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-12 text-foreground/60">
+                <p>No orders found</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
     </StoreLayout>
   )
 }
-

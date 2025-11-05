@@ -1,52 +1,36 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { StoreLayout } from "@/components/layout/store-layout"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Search, ShoppingCart, Plus, Minus } from "lucide-react"
+import { Search, ShoppingCart, Plus, Minus, Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-
-// Mock products
-const mockProducts = [
-  {
-    id: "1",
-    name: "Pommy Meal - Chicken",
-    sku: "PM-CH-001",
-    description: "Delicious chicken meal",
-    price: 12.99,
-    availableStock: 100,
-  },
-  {
-    id: "2",
-    name: "Pommy Meal - Beef",
-    sku: "PM-BF-001",
-    description: "Tender beef meal",
-    price: 14.99,
-    availableStock: 80,
-  },
-  {
-    id: "3",
-    name: "Pommy Meal - Vegetarian",
-    sku: "PM-VEG-001",
-    description: "Healthy vegetarian option",
-    price: 11.99,
-    availableStock: 60,
-  },
-]
+import { useProducts } from "@/hooks/use-products"
+import { useCreateOrder } from "@/hooks/use-orders"
+import { useCurrentUser } from "@/hooks/use-user"
+import { useToast } from "@/hooks/use-toast"
 
 export default function StoreProductsPage() {
+  const { data: user } = useCurrentUser()
+  const { data: products, loading: productsLoading } = useProducts()
+  const { mutate: createOrder, loading: createLoading } = useCreateOrder()
+  const toast = useToast()
+  
   const [searchTerm, setSearchTerm] = useState("")
   const [cart, setCart] = useState<Record<string, number>>({})
   const [showCart, setShowCart] = useState(false)
 
-  const filteredProducts = mockProducts.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredProducts = useMemo(() => {
+    if (!products) return []
+    return products.filter(
+      (product: any) =>
+        product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [products, searchTerm])
 
   const addToCart = (productId: string) => {
     setCart((prev) => ({
@@ -66,21 +50,50 @@ export default function StoreProductsPage() {
     })
   }
 
-  const cartItems = Object.entries(cart).map(([productId, quantity]) => {
-    const product = mockProducts.find((p) => p.id === productId)
-    return product ? { ...product, quantity } : null
-  }).filter(Boolean) as Array<typeof mockProducts[0] & { quantity: number }>
+  const cartItems = useMemo(() => {
+    if (!products) return []
+    return Object.entries(cart)
+      .map(([productId, quantity]) => {
+        const product = products.find((p: any) => p.id === productId)
+        return product ? { ...product, quantity } : null
+      })
+      .filter(Boolean) as Array<any & { quantity: number }>
+  }, [cart, products])
 
-  const totalAmount = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  )
+  const totalAmount = useMemo(() => {
+    return cartItems.reduce(
+      (sum, item) => sum + (Number(item.price || 0) * item.quantity),
+      0
+    )
+  }, [cartItems])
 
-  const handleCheckout = () => {
-    // TODO: Create order API call
-    alert("Order submitted! Admin will review and approve.")
-    setCart({})
-    setShowCart(false)
+  const handleCheckout = async () => {
+    if (!user?.storeId) {
+      toast.error("Store Required", "Please ensure you are associated with a store")
+      return
+    }
+
+    if (cartItems.length === 0) {
+      toast.error("Cart Empty", "Please add items to your cart")
+      return
+    }
+
+    try {
+      await createOrder({
+        storeId: user.storeId,
+        orderType: "MANUAL",
+        items: cartItems.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+        })),
+        notes: "Order placed from store portal",
+      })
+      toast.success("Order submitted successfully! Admin will review and approve.")
+      setCart({})
+      setShowCart(false)
+    } catch (error: any) {
+      toast.error("Failed to submit order", error?.message || "Please try again")
+    }
   }
 
   return (
@@ -110,66 +123,86 @@ export default function StoreProductsPage() {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map((product) => (
-            <Card key={product.id} className="overflow-hidden hover:scale-[1.02] transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gradient-gold mb-1">
-                      {product.name}
-                    </h3>
-                    <p className="text-sm text-foreground/60">{product.sku}</p>
-                    <p className="text-sm text-foreground/70 mt-2">{product.description}</p>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-gold/20">
+        {productsLoading ? (
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-gold" />
+              </div>
+            </CardContent>
+          </Card>
+        ) : filteredProducts.length === 0 ? (
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center py-12 text-foreground/60">
+                <p>No products found</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProducts.map((product: any) => (
+              <Card key={product.id} className="overflow-hidden hover:scale-[1.02] transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="space-y-4">
                     <div>
-                      <p className="text-2xl font-bold">${product.price.toFixed(2)}</p>
-                      <p className="text-xs text-foreground/60">
-                        Stock: {product.availableStock}
+                      <h3 className="text-lg font-semibold text-gradient-gold mb-1">
+                        {product.name || "Unknown Product"}
+                      </h3>
+                      <p className="text-sm text-foreground/60">{product.sku || "N/A"}</p>
+                      <p className="text-sm text-foreground/70 mt-2">
+                        {product.description || "No description available"}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {cart[product.id] ? (
-                        <>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-gold/20">
+                      <div>
+                        <p className="text-2xl font-bold">${Number(product.price || 0).toFixed(2)}</p>
+                        <p className="text-xs text-foreground/60">
+                          Stock: {product.stockLevel || "N/A"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {cart[product.id] ? (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => updateCartQuantity(product.id, -1)}
+                              className="h-8 w-8"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <span className="w-8 text-center font-semibold">
+                              {cart[product.id]}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => updateCartQuantity(product.id, 1)}
+                              className="h-8 w-8"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </>
+                        ) : (
                           <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => updateCartQuantity(product.id, -1)}
-                            className="h-8 w-8"
+                            onClick={() => addToCart(product.id)}
+                            size="sm"
+                            className="glow-gold-sm"
                           >
-                            <Minus className="h-4 w-4" />
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add
                           </Button>
-                          <span className="w-8 text-center font-semibold">
-                            {cart[product.id]}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => updateCartQuantity(product.id, 1)}
-                            className="h-8 w-8"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          onClick={() => addToCart(product.id)}
-                          size="sm"
-                          className="glow-gold-sm"
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add
-                        </Button>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* Cart Dialog */}
         <Dialog open={showCart} onOpenChange={setShowCart}>
@@ -189,8 +222,10 @@ export default function StoreProductsPage() {
                         className="flex items-center justify-between p-4 rounded-xl glass border border-gold/20"
                       >
                         <div className="flex-1">
-                          <p className="font-semibold">{item.name}</p>
-                          <p className="text-sm text-foreground/60">${item.price.toFixed(2)} each</p>
+                          <p className="font-semibold">{item.name || "Unknown Product"}</p>
+                          <p className="text-sm text-foreground/60">
+                            ${Number(item.price || 0).toFixed(2)} each
+                          </p>
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-2">
@@ -215,7 +250,7 @@ export default function StoreProductsPage() {
                             </Button>
                           </div>
                           <p className="w-20 text-right font-semibold">
-                            ${(item.price * item.quantity).toFixed(2)}
+                            ${(Number(item.price || 0) * item.quantity).toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -231,10 +266,18 @@ export default function StoreProductsPage() {
                     </div>
                     <Button
                       onClick={handleCheckout}
+                      disabled={createLoading}
                       className="w-full glow-gold-sm"
                       size="lg"
                     >
-                      Submit Order
+                      {createLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        "Submit Order"
+                      )}
                     </Button>
                   </div>
                 </>
@@ -246,4 +289,3 @@ export default function StoreProductsPage() {
     </StoreLayout>
   )
 }
-

@@ -5,7 +5,7 @@ import { KitchenService } from "@/lib/services/kitchen.service"
 // GET /api/kitchen-sheets - List kitchen sheets
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     const filters = {
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 // POST /api/kitchen-sheets - Generate kitchen sheet from order
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only admins or kitchen staff can generate sheets
     if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN" && user.role !== "KITCHEN_STAFF") {

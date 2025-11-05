@@ -10,7 +10,7 @@ const cancelExpiredSchema = z.object({
 // POST /api/jobs/order-expiration - Cancel expired draft orders manually
 export async function POST(request: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "ADMIN"])
+    await requireRole(["SUPER_ADMIN", "ADMIN"], request)
 
     const body = await request.json().catch(() => ({}))
     const validatedData = cancelExpiredSchema.parse(body)

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 // GET /api/driver/stats - Get driver statistics
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only drivers can access this endpoint
     if (user.role !== "DRIVER") {

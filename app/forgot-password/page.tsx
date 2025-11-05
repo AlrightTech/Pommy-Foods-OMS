@@ -1,15 +1,40 @@
 "use client"
 
+import { useState } from "react"
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
 export default function ForgotPasswordPage() {
+  const toast = useToast()
+  const [isLoading, setIsLoading] = useState(false)
+
   const handleForgotPassword = async (data: { email: string }) => {
-    // TODO: Implement actual password reset
-    console.log("Password reset request for:", data.email)
-    // In production, this would send an email with reset link
+    setIsLoading(true)
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: data.email }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to send reset email")
+      }
+
+      toast.success(
+        "Email Sent",
+        "If an account with that email exists, we've sent a password reset link."
+      )
+    } catch (error: any) {
+      toast.error("Error", error?.message || "Failed to process request")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

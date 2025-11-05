@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,48 +16,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Eye, Plus } from "lucide-react"
+import { Eye, Plus, Loader2 } from "lucide-react"
+import { useOrders } from "@/hooks/use-orders"
+import { useStores } from "@/hooks/use-stores"
 import type { OrderStatus } from "@/types"
-
-// Mock data
-const mockOrders = [
-  {
-    id: "ORD-001",
-    orderNumber: "ORD-001",
-    storeId: "1",
-    storeName: "Convenience Store A",
-    status: "PENDING" as OrderStatus,
-    totalAmount: 450.0,
-    createdAt: new Date(),
-    orderType: "MANUAL" as const,
-  },
-  {
-    id: "ORD-002",
-    orderNumber: "ORD-002",
-    storeId: "2",
-    storeName: "Restaurant B",
-    status: "APPROVED" as OrderStatus,
-    totalAmount: 1250.0,
-    createdAt: new Date(),
-    orderType: "AUTO_REPLENISH" as const,
-  },
-  {
-    id: "ORD-003",
-    orderNumber: "ORD-003",
-    storeId: "3",
-    storeName: "Convenience Store C",
-    status: "DRAFT" as OrderStatus,
-    totalAmount: 320.0,
-    createdAt: new Date(),
-    orderType: "AUTO_REPLENISH" as const,
-  },
-]
-
-const mockStores = [
-  { id: "1", name: "Convenience Store A" },
-  { id: "2", name: "Restaurant B" },
-  { id: "3", name: "Convenience Store C" },
-]
 
 export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -65,21 +27,36 @@ export default function OrdersPage() {
   const [storeFilter, setStoreFilter] = useState("all")
   const [activeTab, setActiveTab] = useState("all")
 
-  const filteredOrders = mockOrders.filter((order) => {
-    const matchesSearch =
-      order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.storeName.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || order.status === statusFilter
-    const matchesStore = storeFilter === "all" || order.storeId === storeFilter
-    return matchesSearch && matchesStatus && matchesStore
-  })
+  // Fetch orders and stores dynamically
+  const { data: orders, loading: ordersLoading, refetch: refetchOrders } = useOrders()
+  const { data: stores, loading: storesLoading } = useStores()
 
-  const ordersByTab = {
-    all: filteredOrders,
-    pending: filteredOrders.filter((o) => o.status === "PENDING" || o.status === "DRAFT"),
-    approved: filteredOrders.filter((o) => o.status === "APPROVED"),
-    completed: filteredOrders.filter((o) => o.status === "COMPLETED" || o.status === "DELIVERED"),
-  }
+  const filteredOrders = useMemo(() => {
+    if (!orders) return []
+    
+    return orders.filter((order: any) => {
+      const orderNumber = order.orderNumber || order.id || ""
+      const storeName = order.store?.name || ""
+      
+      const matchesSearch =
+        orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        storeName.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      const matchesStatus = statusFilter === "all" || order.status === statusFilter
+      const matchesStore = storeFilter === "all" || order.storeId === storeFilter
+      
+      return matchesSearch && matchesStatus && matchesStore
+    })
+  }, [orders, searchTerm, statusFilter, storeFilter])
+
+  const ordersByTab = useMemo(() => {
+    return {
+      all: filteredOrders,
+      pending: filteredOrders.filter((o: any) => o.status === "PENDING" || o.status === "DRAFT"),
+      approved: filteredOrders.filter((o: any) => o.status === "APPROVED"),
+      completed: filteredOrders.filter((o: any) => o.status === "COMPLETED" || o.status === "DELIVERED"),
+    }
+  }, [filteredOrders])
 
   return (
     <DashboardLayout>
@@ -106,7 +83,7 @@ export default function OrdersPage() {
           onStatusFilterChange={setStatusFilter}
           storeFilter={storeFilter}
           onStoreFilterChange={setStoreFilter}
-          stores={mockStores}
+          stores={stores || []}
           onReset={() => {
             setSearchTerm("")
             setStatusFilter("all")
@@ -121,27 +98,33 @@ export default function OrdersPage() {
             <CardDescription>View and manage orders from all stores</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-6">
-                <TabsTrigger value="all">All Orders</TabsTrigger>
-                <TabsTrigger value="pending">Pending Review</TabsTrigger>
-                <TabsTrigger value="approved">Approved</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-              </TabsList>
+            {ordersLoading || storesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-gold" />
+              </div>
+            ) : (
+              <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="mb-6">
+                  <TabsTrigger value="all">All Orders ({ordersByTab.all.length})</TabsTrigger>
+                  <TabsTrigger value="pending">Pending Review ({ordersByTab.pending.length})</TabsTrigger>
+                  <TabsTrigger value="approved">Approved ({ordersByTab.approved.length})</TabsTrigger>
+                  <TabsTrigger value="completed">Completed ({ordersByTab.completed.length})</TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="all">
-                <OrdersTable orders={ordersByTab.all} />
-              </TabsContent>
-              <TabsContent value="pending">
-                <OrdersTable orders={ordersByTab.pending} />
-              </TabsContent>
-              <TabsContent value="approved">
-                <OrdersTable orders={ordersByTab.approved} />
-              </TabsContent>
-              <TabsContent value="completed">
-                <OrdersTable orders={ordersByTab.completed} />
-              </TabsContent>
-            </Tabs>
+                <TabsContent value="all">
+                  <OrdersTable orders={ordersByTab.all} />
+                </TabsContent>
+                <TabsContent value="pending">
+                  <OrdersTable orders={ordersByTab.pending} />
+                </TabsContent>
+                <TabsContent value="approved">
+                  <OrdersTable orders={ordersByTab.approved} />
+                </TabsContent>
+                <TabsContent value="completed">
+                  <OrdersTable orders={ordersByTab.completed} />
+                </TabsContent>
+              </Tabs>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -149,7 +132,7 @@ export default function OrdersPage() {
   )
 }
 
-function OrdersTable({ orders }: { orders: typeof mockOrders }) {
+function OrdersTable({ orders }: { orders: any[] }) {
   return (
     <Table>
       <TableHeader>
@@ -171,31 +154,38 @@ function OrdersTable({ orders }: { orders: typeof mockOrders }) {
             </TableCell>
           </TableRow>
         ) : (
-          orders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell className="font-medium">{order.orderNumber}</TableCell>
-              <TableCell>{order.storeName}</TableCell>
-              <TableCell>
-                <span className="text-xs text-foreground/60">
-                  {order.orderType === "AUTO_REPLENISH" ? "Auto" : "Manual"}
-                </span>
-              </TableCell>
-              <TableCell>
-                <OrderStatusBadge status={order.status} />
-              </TableCell>
-              <TableCell>${order.totalAmount.toFixed(2)}</TableCell>
-              <TableCell className="text-foreground/60">
-                {order.createdAt.toLocaleDateString()}
-              </TableCell>
-              <TableCell className="text-right">
-                <Link href={`/dashboard/orders/${order.id}`}>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </TableCell>
-            </TableRow>
-          ))
+          orders.map((order: any) => {
+            const orderDate = order.createdAt ? new Date(order.createdAt) : new Date()
+            const totalAmount = Number(order.totalAmount || 0)
+            
+            return (
+              <TableRow key={order.id}>
+                <TableCell className="font-medium">
+                  {order.orderNumber || order.id}
+                </TableCell>
+                <TableCell>{order.store?.name || "Unknown Store"}</TableCell>
+                <TableCell>
+                  <span className="text-xs text-foreground/60">
+                    {order.orderType === "AUTO_REPLENISH" ? "Auto" : "Manual"}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <OrderStatusBadge status={order.status as OrderStatus} />
+                </TableCell>
+                <TableCell>${totalAmount.toFixed(2)}</TableCell>
+                <TableCell className="text-foreground/60">
+                  {orderDate.toLocaleDateString()}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Link href={`/dashboard/orders/${order.id}`}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </TableCell>
+              </TableRow>
+            )
+          })
         )}
       </TableBody>
     </Table>

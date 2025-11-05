@@ -8,7 +8,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Verify notification belongs to user
     const notification = await NotificationService.getNotificationById(params.id)

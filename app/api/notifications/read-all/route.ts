@@ -5,7 +5,7 @@ import { NotificationService } from "@/lib/services/notification.service"
 // PUT /api/notifications/read-all - Mark all notifications as read
 export async function PUT(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const result = await NotificationService.markAllAsRead(user.id)
 

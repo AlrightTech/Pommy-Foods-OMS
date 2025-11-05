@@ -1,17 +1,20 @@
 "use client"
 
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { RegisterForm } from "@/components/auth/register-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useToast } from "@/hooks/use-toast"
+import { useStores } from "@/hooks/use-stores"
+import { Loader2 } from "lucide-react"
 import Link from "next/link"
 
-// Mock stores - will be replaced with API call
-const mockStores = [
-  { id: "1", name: "Convenience Store A" },
-  { id: "2", name: "Restaurant B" },
-  { id: "3", name: "Convenience Store C" },
-]
-
 export default function RegisterPage() {
+  const router = useRouter()
+  const toast = useToast()
+  const { data: stores, loading: storesLoading } = useStores()
+  const [isRegistering, setIsRegistering] = useState(false)
+
   const handleRegister = async (data: {
     name: string
     email: string
@@ -19,11 +22,40 @@ export default function RegisterPage() {
     role: string
     storeId?: string
   }) => {
-    // TODO: Implement actual registration
-    console.log("Registration attempt:", data)
-    alert("Registration successful! Please contact admin for account activation.")
-    // Redirect to login after successful registration
-    window.location.href = "/login"
+    setIsRegistering(true)
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+          storeId: data.storeId || undefined,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || "Registration failed")
+      }
+
+      toast.success(
+        "Registration Successful",
+        "Your account has been created. Please contact admin for activation."
+      )
+      
+      // Redirect to login after successful registration
+      setTimeout(() => {
+        router.push("/login")
+      }, 2000)
+    } catch (error: any) {
+      toast.error("Registration Failed", error?.message || "Please try again")
+    } finally {
+      setIsRegistering(false)
+    }
   }
 
   return (
@@ -47,7 +79,16 @@ export default function RegisterPage() {
             <CardDescription>Create a new account to get started</CardDescription>
           </CardHeader>
           <CardContent>
-            <RegisterForm onSubmit={handleRegister} stores={mockStores} />
+            {storesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-gold" />
+              </div>
+            ) : (
+              <RegisterForm 
+                onSubmit={handleRegister} 
+                stores={stores || []} 
+              />
+            )}
           </CardContent>
         </Card>
 

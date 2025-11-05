@@ -14,7 +14,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const returnRecord = await ReturnService.getReturnById(params.id)
 
@@ -53,7 +53,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only admins can update returns
     if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {

@@ -5,7 +5,7 @@ import { ReplenishmentService } from "@/lib/services/replenishment.service"
 // POST /api/replenishment/check - Check stock and generate draft orders
 export async function POST(request: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "ADMIN"])
+    await requireRole(["SUPER_ADMIN", "ADMIN"], request)
 
     const body = await request.json().catch(() => ({}))
     const storeId = body.storeId || undefined

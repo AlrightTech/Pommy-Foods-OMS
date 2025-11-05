@@ -15,7 +15,7 @@ const optimizeDriverRouteSchema = z.object({
 // POST /api/driver/route - Optimize route for current driver's deliveries
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only drivers can optimize their routes
     if (user.role !== "DRIVER") {

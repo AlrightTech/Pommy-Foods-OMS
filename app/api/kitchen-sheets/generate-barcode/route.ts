@@ -10,7 +10,7 @@ const generateBarcodeSchema = z.object({
 // POST /api/kitchen-sheets/generate-barcode - Generate barcode for item
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only kitchen staff or admins can generate barcodes
     if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN" && user.role !== "KITCHEN_STAFF") {

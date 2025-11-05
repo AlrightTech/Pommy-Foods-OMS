@@ -13,7 +13,7 @@ const logTemperatureSchema = z.object({
 // POST /api/driver/temperature - Log temperature (driver-specific endpoint)
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only drivers can log temperature
     if (user.role !== "DRIVER") {

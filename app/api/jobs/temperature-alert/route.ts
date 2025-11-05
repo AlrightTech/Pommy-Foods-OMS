@@ -5,7 +5,7 @@ import { checkTemperatureAlerts } from "@/lib/jobs/temperature-alert-check"
 // POST /api/jobs/temperature-alert - Trigger temperature alert check manually
 export async function POST(request: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "ADMIN"])
+    await requireRole(["SUPER_ADMIN", "ADMIN"], request)
 
     const result = await checkTemperatureAlerts()
 

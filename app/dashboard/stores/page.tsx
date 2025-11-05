@@ -6,43 +6,17 @@ import { Card } from "@/components/ui/card"
 import { StoresTable } from "@/components/stores/stores-table"
 import { StoreForm } from "@/components/stores/store-form"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-
-// Mock data
-const mockStores = [
-  {
-    id: "1",
-    name: "Convenience Store A",
-    contactName: "John Doe",
-    email: "john@storea.com",
-    phone: "+1 234-567-8900",
-    city: "New York",
-    region: "NYC",
-    isActive: true,
-  },
-  {
-    id: "2",
-    name: "Restaurant B",
-    contactName: "Jane Smith",
-    email: "jane@restb.com",
-    phone: "+1 234-567-8901",
-    city: "Los Angeles",
-    region: "California",
-    isActive: true,
-  },
-  {
-    id: "3",
-    name: "Convenience Store C",
-    contactName: "Bob Johnson",
-    email: "bob@storec.com",
-    phone: "+1 234-567-8902",
-    city: "Chicago",
-    region: "Illinois",
-    isActive: true,
-  },
-]
+import { Button } from "@/components/ui/button"
+import { Loader2 } from "lucide-react"
+import { useStores, useCreateStore, useUpdateStore } from "@/hooks/use-stores"
+import { useToast } from "@/hooks/use-toast"
 
 export default function StoresPage() {
-  const [stores, setStores] = useState(mockStores)
+  const { data: stores, loading: storesLoading, refetch: refetchStores } = useStores()
+  const { mutate: createStore, loading: createLoading } = useCreateStore()
+  const { mutate: updateStore, loading: updateLoading } = useUpdateStore("")
+  const toast = useToast()
+  
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingStore, setEditingStore] = useState<any>(null)
 
@@ -58,21 +32,57 @@ export default function StoresPage() {
 
   const handleDelete = async (storeId: string) => {
     if (confirm("Are you sure you want to delete this store?")) {
-      setStores(stores.filter((s) => s.id !== storeId))
+      try {
+        const response = await fetch(`/api/stores/${storeId}`, {
+          method: "DELETE",
+          credentials: "include",
+        })
+        
+        if (response.ok) {
+          toast.success("Store deleted successfully")
+          refetchStores()
+        } else {
+          const error = await response.json()
+          toast.error("Failed to delete store", error?.error || "Please try again")
+        }
+      } catch (error: any) {
+        toast.error("Failed to delete store", error?.message || "Please try again")
+      }
     }
   }
 
   const handleSubmit = async (data: any) => {
-    // TODO: Replace with actual API call
-    if (editingStore) {
-      setStores(
-        stores.map((s) => (s.id === editingStore.id ? { ...s, ...data } : s))
+    try {
+      if (editingStore) {
+        const response = await fetch(`/api/stores/${editingStore.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(data),
+        })
+        
+        if (response.ok) {
+          toast.success("Store updated successfully")
+          setIsCreateDialogOpen(false)
+          setEditingStore(null)
+          refetchStores()
+        } else {
+          const error = await response.json()
+          toast.error("Failed to update store", error?.error || "Please try again")
+        }
+      } else {
+        await createStore(data)
+        toast.success("Store created successfully")
+        setIsCreateDialogOpen(false)
+        setEditingStore(null)
+        refetchStores()
+      }
+    } catch (error: any) {
+      toast.error(
+        editingStore ? "Failed to update store" : "Failed to create store",
+        error?.message || "Please try again"
       )
-    } else {
-      setStores([...stores, { ...data, id: Date.now().toString(), isActive: true }])
     }
-    setIsCreateDialogOpen(false)
-    setEditingStore(null)
   }
 
   return (
@@ -85,12 +95,20 @@ export default function StoresPage() {
         </div>
 
         {/* Stores Table */}
-        <StoresTable
-          stores={stores}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onCreate={handleCreate}
-        />
+        {storesLoading ? (
+          <Card>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-gold" />
+            </div>
+          </Card>
+        ) : (
+          <StoresTable
+            stores={stores || []}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onCreate={handleCreate}
+          />
+        )}
 
         {/* Create/Edit Dialog */}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>

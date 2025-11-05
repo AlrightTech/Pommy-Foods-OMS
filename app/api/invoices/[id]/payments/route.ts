@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Verify invoice exists and check access
     const { InvoiceService } = await import("@/lib/services/invoice.service")

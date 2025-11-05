@@ -8,34 +8,49 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ProductForm } from "@/components/products/product-form"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ArrowLeft, Edit, Package, DollarSign, Calendar, Thermometer } from "lucide-react"
-
-// Mock product data
-const mockProduct = {
-  id: "1",
-  name: "Pommy Meal - Chicken",
-  sku: "PM-CH-001",
-  description: "Delicious chicken meal prepared fresh daily",
-  price: 12.99,
-  unit: "unit",
-  category: "Meals",
-  shelfLife: 7,
-  storageTempMin: 2,
-  storageTempMax: 8,
-  isActive: true,
-  createdAt: new Date("2023-01-15"),
-}
+import { ArrowLeft, Edit, Package, DollarSign, Calendar, Thermometer, Loader2 } from "lucide-react"
+import { useProduct, useUpdateProduct } from "@/hooks/use-products"
+import { useToast } from "@/hooks/use-toast"
 
 export default function ProductDetailsPage() {
   const params = useParams()
   const router = useRouter()
-  const [product] = useState(mockProduct)
+  const productId = params.id as string
+  const { data: product, loading: productLoading, refetch: refetchProduct } = useProduct(productId)
+  const { mutate: updateProduct, loading: updateLoading } = useUpdateProduct(productId)
+  const toast = useToast()
   const [isEditing, setIsEditing] = useState(false)
 
   const handleUpdate = async (data: any) => {
-    // TODO: API call to update product
-    alert("Product updated successfully!")
-    setIsEditing(false)
+    try {
+      await updateProduct(data)
+      toast.success("Product updated successfully")
+      setIsEditing(false)
+      refetchProduct()
+    } catch (error: any) {
+      toast.error("Failed to update product", error?.message || "Please try again")
+    }
+  }
+
+  if (productLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-gold" />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!product) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-12">
+          <p className="text-foreground/60 mb-4">Product not found</p>
+          <Button onClick={() => router.back()}>Go Back</Button>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (
@@ -87,9 +102,9 @@ export default function ProductDetailsPage() {
                     <div>
                       <p className="text-sm text-foreground/60">Price</p>
                       <p className="text-xl font-bold text-gradient-gold">
-                        ${product.price.toFixed(2)}
+                        ${Number(product.price || 0).toFixed(2)}
                       </p>
-                      <p className="text-xs text-foreground/60">per {product.unit}</p>
+                      <p className="text-xs text-foreground/60">per {product.unit || "unit"}</p>
                     </div>
                   </div>
 
@@ -101,13 +116,15 @@ export default function ProductDetailsPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 p-4 rounded-xl glass border border-gold/20">
-                    <Calendar className="w-6 h-6 text-gold mt-1" />
-                    <div>
-                      <p className="text-sm text-foreground/60">Shelf Life</p>
-                      <p className="text-xl font-bold">{product.shelfLife} days</p>
+                  {product.shelfLife && (
+                    <div className="flex items-start gap-3 p-4 rounded-xl glass border border-gold/20">
+                      <Calendar className="w-6 h-6 text-gold mt-1" />
+                      <div>
+                        <p className="text-sm text-foreground/60">Shelf Life</p>
+                        <p className="text-xl font-bold">{product.shelfLife} days</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {(product.storageTempMin || product.storageTempMax) && (
                     <div className="flex items-start gap-3 p-4 rounded-xl glass border border-gold/20">
@@ -115,7 +132,7 @@ export default function ProductDetailsPage() {
                       <div>
                         <p className="text-sm text-foreground/60">Storage Temperature</p>
                         <p className="text-xl font-bold">
-                          {product.storageTempMin}°C - {product.storageTempMax}°C
+                          {product.storageTempMin || "N/A"}°C - {product.storageTempMax || "N/A"}°C
                         </p>
                       </div>
                     </div>
@@ -135,7 +152,7 @@ export default function ProductDetailsPage() {
                 <div>
                   <p className="text-sm text-foreground/60">Created</p>
                   <p className="font-semibold">
-                    {product.createdAt.toLocaleDateString()}
+                    {product.createdAt ? new Date(product.createdAt).toLocaleDateString() : "N/A"}
                   </p>
                 </div>
                 <div>
@@ -156,9 +173,20 @@ export default function ProductDetailsPage() {
               <DialogTitle>Edit Product</DialogTitle>
             </DialogHeader>
             <ProductForm
-              defaultValues={product}
+              defaultValues={{
+                name: product.name,
+                sku: product.sku,
+                description: product.description || "",
+                price: Number(product.price || 0),
+                unit: product.unit || "unit",
+                category: product.category || "",
+                shelfLife: product.shelfLife || undefined,
+                storageTempMin: product.storageTempMin || undefined,
+                storageTempMax: product.storageTempMax || undefined,
+              }}
               onSubmit={handleUpdate}
               onCancel={() => setIsEditing(false)}
+              isLoading={updateLoading}
             />
           </DialogContent>
         </Dialog>
@@ -166,4 +194,3 @@ export default function ProductDetailsPage() {
     </DashboardLayout>
   )
 }
-

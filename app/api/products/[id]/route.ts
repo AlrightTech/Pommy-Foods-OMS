@@ -22,7 +22,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAuth()
+    await requireAuth(request)
 
     const product = await ProductService.getProductById(params.id)
 
@@ -50,7 +50,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only admins can update products
     if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
@@ -89,7 +89,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only admins can delete products
     if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {

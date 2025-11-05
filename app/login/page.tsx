@@ -1,15 +1,43 @@
 "use client"
 
+import { useState } from "react"
+import { signIn } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { LoginForm } from "@/components/auth/login-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 
 export default function LoginPage() {
+  const router = useRouter()
+  const toast = useToast()
+  const [isLoading, setIsLoading] = useState(false)
+
   const handleLogin = async (data: { email: string; password: string }) => {
-    // TODO: Implement actual authentication
-    console.log("Login attempt:", data)
-    // Redirect to dashboard after successful login
-    window.location.href = "/dashboard"
+    setIsLoading(true)
+    try {
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        toast.error("Login Failed", result.error || "Invalid credentials")
+        return
+      }
+
+      if (result?.ok) {
+        toast.success("Login successful!")
+        // Redirect based on user role
+        router.push("/dashboard")
+        router.refresh()
+      }
+    } catch (error: any) {
+      toast.error("Login Failed", error?.message || "An error occurred")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

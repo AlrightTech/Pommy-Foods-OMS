@@ -24,7 +24,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Check if user can access this store
     if (!canAccessStore(user, params.id)) {
@@ -57,7 +57,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only admins can update stores, or store owners can update limited fields
     const isAdmin = user.role === "SUPER_ADMIN" || user.role === "ADMIN"
@@ -109,7 +109,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireRole(["SUPER_ADMIN", "ADMIN"])
+    await requireRole(["SUPER_ADMIN", "ADMIN"], request)
 
     await StoreService.deleteStore(params.id)
 

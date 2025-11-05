@@ -14,7 +14,7 @@ export async function POST(
   { params }: { params: { id: string; itemId: string } }
 ) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only kitchen staff or admins can pack items
     if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN" && user.role !== "KITCHEN_STAFF") {

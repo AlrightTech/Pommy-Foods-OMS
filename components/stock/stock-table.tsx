@@ -31,7 +31,7 @@ interface StockItem {
 interface StockTableProps {
   storeId?: string
   stockItems: StockItem[]
-  onUpdate?: (itemId: string, newLevel: number) => void
+  onUpdate?: (itemId: string, newLevel: number, currentItem?: any) => void
   onBulkUpdate?: () => void
 }
 

@@ -30,6 +30,7 @@ interface NotificationListProps {
   notifications: Notification[]
   onNotificationClick: (notification: Notification) => void
   onViewAll: () => void
+  loading?: boolean
 }
 
 const typeIcons = {
@@ -56,6 +57,7 @@ export function NotificationList({
   notifications,
   onNotificationClick,
   onViewAll,
+  loading = false,
 }: NotificationListProps) {
   const unreadCount = notifications.filter((n) => !n.isRead).length
 
@@ -72,7 +74,11 @@ export function NotificationList({
         </div>
       </CardHeader>
       <CardContent className="p-0 flex-1 overflow-y-auto">
-        {notifications.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold"></div>
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="text-center py-12 px-4 text-foreground/60">
             <Bell className="h-12 w-12 mx-auto mb-4 opacity-30" />
             <p className="text-sm">No notifications</p>

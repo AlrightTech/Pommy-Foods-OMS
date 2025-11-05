@@ -5,7 +5,7 @@ import { sendPaymentReminders } from "@/lib/jobs/payment-reminders"
 // POST /api/jobs/payment-reminders - Trigger payment reminders manually
 export async function POST(request: NextRequest) {
   try {
-    await requireRole(["SUPER_ADMIN", "ADMIN"])
+    await requireRole(["SUPER_ADMIN", "ADMIN"], request)
 
     const result = await sendPaymentReminders()
 

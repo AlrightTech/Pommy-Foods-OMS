@@ -12,7 +12,7 @@ const updateThresholdSchema = z.object({
 // GET /api/replenishment/rules - Get replenishment rules
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     const storeId = searchParams.get("storeId") || undefined
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 // PUT /api/replenishment/rules - Update threshold
 export async function PUT(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const body = await request.json()
     const validatedData = updateThresholdSchema.parse(body)

@@ -16,7 +16,7 @@ const createTemperatureLogSchema = z.object({
 // GET /api/temperature - List temperature logs
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 // POST /api/temperature - Create temperature log
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await requireAuth(request)
 
     // Only drivers or admins can log temperature
     if (user.role !== "DRIVER" && user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
