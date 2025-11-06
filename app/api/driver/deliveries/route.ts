@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-helpers"
 import { DeliveryService } from "@/lib/services/delivery.service"
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/driver/deliveries - Get deliveries for current driver
 export async function GET(request: NextRequest) {
   try {

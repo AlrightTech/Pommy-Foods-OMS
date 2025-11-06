@@ -3,6 +3,8 @@ import { requireAuth } from "@/lib/auth-helpers"
 import { UserService } from "@/lib/services/user.service"
 import { z } from "zod"
 
+export const dynamic = 'force-dynamic'
+
 const updateUserSchema = z.object({
   name: z.string().min(2).optional(),
   email: z.string().email().optional(),

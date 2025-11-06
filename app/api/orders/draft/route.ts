@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth-helpers"
 import { OrderService } from "@/lib/services/order.service"
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/orders/draft - Get draft orders (auto-generated)
 export async function GET(request: NextRequest) {
   try {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, canAccessStore } from "@/lib/auth-helpers"
 import { AnalyticsService } from "@/lib/services/analytics.service"
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/analytics/returns - Get returns/wastage reports
 export async function GET(request: NextRequest) {
   try {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-helpers"
 import { prisma } from "@/lib/prisma"
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/driver/stats - Get driver statistics
 export async function GET(request: NextRequest) {
   try {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-helpers"
 import { ReturnService } from "@/lib/services/return.service"
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/returns/analytics - Get wastage analytics
 export async function GET(request: NextRequest) {
   try {

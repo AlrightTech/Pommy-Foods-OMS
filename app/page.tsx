@@ -10,7 +10,10 @@ import { getLandingPageByRole, getModuleNameByRole } from "@/lib/utils/role-redi
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function LandingPage() {
-  const { data: session, status } = useSession()
+  const sessionResult = useSession()
+  // Safely destructure with fallback values
+  const session = sessionResult?.data ?? null
+  const status = sessionResult?.status ?? 'loading'
   const router = useRouter()
 
   // Redirect authenticated users to their role-specific module

@@ -3,6 +3,8 @@ import { requireAuth, canAccessStore } from "@/lib/auth-helpers"
 import { ReplenishmentService } from "@/lib/services/replenishment.service"
 import { z } from "zod"
 
+export const dynamic = 'force-dynamic'
+
 const updateThresholdSchema = z.object({
   storeId: z.string(),
   productId: z.string(),

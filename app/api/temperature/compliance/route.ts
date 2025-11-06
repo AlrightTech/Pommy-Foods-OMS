@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-helpers"
 import { TemperatureService } from "@/lib/services/temperature.service"
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/temperature/compliance - Get compliance statistics
 export async function GET(request: NextRequest) {
   try {
