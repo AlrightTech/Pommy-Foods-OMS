@@ -3,10 +3,10 @@ import { authOptions } from "@/lib/auth"
 
 export const dynamic = 'force-dynamic'
 
+// NextAuth v5 beta - create handler and export as GET and POST
+// This pattern works for NextAuth v5.0.0-beta.22
 const handler = NextAuth(authOptions)
 
-// NextAuth v5 beta type workaround
-// The handler is a NextAuthResult which implements GET and POST but TypeScript doesn't recognize it
-// @ts-expect-error - NextAuth v5 beta has incomplete types
-export const { GET, POST } = handler
+export const GET = handler
+export const POST = handler
 
