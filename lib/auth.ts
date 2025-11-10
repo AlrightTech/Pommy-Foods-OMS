@@ -6,6 +6,8 @@ import type { UserRole } from "@prisma/client"
 
 export const authOptions: NextAuthConfig = {
   secret: process.env.NEXTAUTH_SECRET,
+  // Trust proxy for production deployments (Vercel, etc.)
+  trustHost: true,
   providers: [
     CredentialsProvider({
       name: "Credentials",

@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google"
 import "./globals.css"
 import { ToastProvider } from "@/hooks/use-toast"
 import { ToastContainer } from "@/components/ui/toast-container"
+import { SessionProvider } from "@/components/providers/session-provider"
 
 const poppins = Poppins({ 
   subsets: ["latin"],
@@ -23,10 +24,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${poppins.variable} font-sans`}>
-        <ToastProvider>
-          {children}
-          <ToastContainer />
-        </ToastProvider>
+        <SessionProvider>
+          <ToastProvider>
+            {children}
+            <ToastContainer />
+          </ToastProvider>
+        </SessionProvider>
       </body>
     </html>
   )

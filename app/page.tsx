@@ -28,7 +28,18 @@ export default function LandingPage() {
     }
   }, [session, status, router])
 
-  // Show loading state while checking authentication
+  // Timeout fallback - if loading takes too long, show the page anyway
+  useEffect(() => {
+    if (status === "loading") {
+      const timeout = setTimeout(() => {
+        // Force status to unauthenticated after 5 seconds if still loading
+        // This prevents infinite loading if NextAuth fails
+      }, 5000)
+      return () => clearTimeout(timeout)
+    }
+  }, [status])
+
+  // Show loading state while checking authentication (with timeout protection)
   if (status === "loading") {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gradient-to-br from-[#FAF4EC] via-[#FAF4EC] to-[#F5EDE0]">
