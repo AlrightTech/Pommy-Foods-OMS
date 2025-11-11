@@ -3,9 +3,28 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "./prisma"
 import bcrypt from "bcryptjs"
 import type { UserRole } from "@prisma/client"
+import { getAuthConfig } from "./auth-config"
+
+// Validate configuration at module load time
+let authConfig: { secret: string; url?: string }
+try {
+  authConfig = getAuthConfig()
+} catch (error) {
+  // In production, we want to fail fast
+  if (process.env.NODE_ENV === "production") {
+    throw error
+  }
+  // In development, log error but allow app to start (will fail on auth attempt)
+  console.error("⚠️ NextAuth Configuration Error:")
+  console.error(error instanceof Error ? error.message : String(error))
+  // Use a fallback secret for development (not secure, but allows app to start)
+  authConfig = {
+    secret: process.env.NEXTAUTH_SECRET || "development-secret-change-in-production-min-32-chars",
+  }
+}
 
 export const authOptions: NextAuthConfig = {
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: authConfig.secret,
   // Trust proxy for production deployments (Vercel, etc.)
   trustHost: true,
   providers: [

@@ -20,10 +20,11 @@ export default function LandingPage() {
   useEffect(() => {
     if (status === "authenticated" && session?.user?.role) {
       const landingPage = getLandingPageByRole(session.user.role)
-      // Small delay to ensure smooth transition
+      // Small delay to ensure smooth transition and prevent "Node cannot be found" errors
       const timer = setTimeout(() => {
-        router.push(landingPage)
-      }, 100)
+        // Use replace instead of push to avoid adding to history
+        router.replace(landingPage)
+      }, 200)
       return () => clearTimeout(timer)
     }
   }, [session, status, router])

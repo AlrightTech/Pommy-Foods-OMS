@@ -23,10 +23,20 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check authentication for protected routes
-  const token = await getToken({ 
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET 
-  })
+  // Only check token if NEXTAUTH_SECRET is configured
+  let token = null
+  if (process.env.NEXTAUTH_SECRET) {
+    try {
+      token = await getToken({ 
+        req: request,
+        secret: process.env.NEXTAUTH_SECRET 
+      })
+    } catch (error) {
+      // If token validation fails due to config issues, log but don't block
+      // The auth route handler will return proper error messages
+      console.error("Token validation error:", error)
+    }
+  }
 
   // Dashboard routes require authentication
   if (pathname.startsWith("/dashboard")) {

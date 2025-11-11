@@ -24,7 +24,17 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        toast.error("Login Failed", result.error || "Invalid credentials")
+        // Provide more helpful error messages
+        let errorMessage = result.error
+        if (result.error === "Configuration") {
+          errorMessage = "Authentication is not properly configured. Please contact the administrator."
+        } else if (result.error === "CredentialsSignin") {
+          errorMessage = "Invalid email or password. Please try again."
+        } else if (result.error.includes("NEXTAUTH")) {
+          errorMessage = "Authentication service is not properly configured. Please contact the administrator."
+        }
+        toast.error("Login Failed", errorMessage)
+        setIsLoading(false)
         return
       }
 
@@ -34,19 +44,19 @@ export default function LoginPage() {
         // Get callback URL if provided
         const callbackUrl = searchParams.get("callbackUrl")
         
-        if (callbackUrl) {
-          // Redirect to the originally requested page
-          router.push(callbackUrl)
-        } else {
-          // Redirect to landing page which will handle role-based redirect
-          router.push("/")
-        }
+        // Wait a moment for the session to be established
+        await new Promise(resolve => setTimeout(resolve, 100))
         
-        router.refresh()
+        // Use window.location for a full page reload to ensure session is established
+        // This prevents "Node cannot be found" errors
+        if (callbackUrl) {
+          window.location.href = callbackUrl
+        } else {
+          window.location.href = "/"
+        }
       }
     } catch (error: any) {
       toast.error("Login Failed", error?.message || "An error occurred")
-    } finally {
       setIsLoading(false)
     }
   }
